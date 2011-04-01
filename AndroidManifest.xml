@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="edu.ucla.cens.Updater"
+      android:versionCode="9"
+      android:versionName="1.7">
+      
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+     
+    <application android:icon="@drawable/manager" android:label="@string/app_name" android:debuggable="true">
+    	<activity android:name="edu.ucla.cens.Updater.AppList">
+	    	<intent-filter>
+	        	<action android:name="android.intent.action.MAIN" />
+	        	<category android:name="android.intent.category.LAUNCHER" />
+	        </intent-filter>
+	    </activity>
+	    
+		<activity android:name="edu.ucla.cens.Updater.Installer">
+	    </activity>
+	    
+		<receiver android:name="edu.ucla.cens.Updater.UpdateReceiver">
+			<intent-filter>
+				<action android:name="android.intent.action.BOOT_COMPLETED"/>
+				<action android:name="edu.ucla.cens.Updater.Update"/>
+				<action android:name="edu.ucla.cens.Updater.Reset"/>
+			</intent-filter>
+		</receiver>
+	
+<activity android:name="CustomPreferenceActivity"></activity>
+</application>
+</manifest> 

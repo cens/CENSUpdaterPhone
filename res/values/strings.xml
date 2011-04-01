@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <string name="app_name">CENS App Manager</string>
+    <string-array name="time_ranges">
+    	<item>Minutes</item>
+    	<item>Hours</item>
+    </string-array>
+</resources>
