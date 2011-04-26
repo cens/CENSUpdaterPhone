@@ -39,9 +39,6 @@ public class Installer extends Activity
 {
 	private static final String TAG = "CENS.Updater.Installer";
 	
-	private static final String INSTALL_ACTION = "edu.ucla.cens.Updater.Installer.AppInstalled";
-	private static final String REINSTALL_ACTION = "edu.ucla.cens.Updater.Installer.AppReinstalled";
-	
 	private static final int FINISHED_INSTALLING_PACKAGE = 1;
 	private static final int FINISHED_UNINSTALLING_PACKAGE = 2;
 	
@@ -72,7 +69,6 @@ public class Installer extends Activity
 	
 	private PackageInformation[] packagesToBeUpdated;
 	private int currPackageIndex;
-	private boolean currPackageReinstall;
 	
 	private boolean currPackageError;
 	private boolean installerKilled;
@@ -582,11 +578,6 @@ public class Installer extends Activity
 				{	
 					Database db = new Database(this);
 					db.removeUpdate(packagesToBeUpdated[currPackageIndex].getQualifiedName());
-					
-					Intent installedPackageBroadcast = new Intent((currPackageReinstall) ? REINSTALL_ACTION : INSTALL_ACTION);
-					Uri installPackageData = (new Uri.Builder()).scheme("package").authority(packagesToBeUpdated[currPackageIndex].getQualifiedName()).build();
-					installedPackageBroadcast.setData(installPackageData);
-					sendBroadcast(installedPackageBroadcast);
 				}
 				else
 				{
@@ -678,8 +669,6 @@ public class Installer extends Activity
 				
 				if(packagesToBeUpdated[currPackageIndex].getAction() == PackageInformation.Action.UPDATE)
 				{
-					currPackageReinstall = true;
-					
 					// Spawn a new downloader thread and start it.
 					downloaderThread = new PackageDownloader();
 					Thread downloader = new Thread(downloaderThread);
@@ -688,8 +677,6 @@ public class Installer extends Activity
 				}
 				else
 				{
-					currPackageReinstall = false;
-					
 					Uri packageUri = Uri.parse("package:" + packagesToBeUpdated[currPackageIndex].getQualifiedName());
 					Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageUri);
 					startActivityForResult(uninstallIntent, FINISHED_UNINSTALLING_PACKAGE);
@@ -697,8 +684,6 @@ public class Installer extends Activity
 			}
 			catch(NameNotFoundException e)
 			{
-				currPackageReinstall = false;
-				
 				// Spawn a new downloader thread and start it.
 				downloaderThread = new PackageDownloader();
 				Thread downloader = new Thread(downloaderThread);
