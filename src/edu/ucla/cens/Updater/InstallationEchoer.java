@@ -3,7 +3,8 @@ package edu.ucla.cens.Updater;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
+import android.net.Uri;
+import edu.ucla.cens.systemlog.Log;
 
 /**
  * Catches installation events and rebroadcasts them so newly installed
@@ -24,8 +25,10 @@ public class InstallationEchoer extends BroadcastReceiver
 	public void onReceive(Context context, Intent intent) {
 		Log.i(TAG, "Echoing new package added Intent: " + intent.getData().toString());
 		
-		intent.setAction(INSTALL_ACTION);
-		context.sendBroadcast(intent);
+		Intent newIntent = new Intent(INSTALL_ACTION);
+		newIntent.putExtras(intent);		
+		newIntent.setData((new Uri.Builder()).scheme(intent.getData().getScheme()).authority(intent.getData().getSchemeSpecificPart()).build());
+		
+		context.sendBroadcast(newIntent);
 	}
-
 }

@@ -21,13 +21,18 @@
 	    </activity>
 	    
 		<receiver android:name="edu.ucla.cens.Updater.UpdateReceiver">
-			<intent-filter>
+            <intent-filter>
 				<action android:name="android.intent.action.BOOT_COMPLETED"/>
 				<action android:name="edu.ucla.cens.Updater.Update"/>
 				<action android:name="edu.ucla.cens.Updater.Reset"/>
 			</intent-filter>
 		</receiver>
-	
-<activity android:name="CustomPreferenceActivity"></activity>
-</application>
+		
+		<receiver android:name="edu.ucla.cens.Updater.InstallationEchoer">
+		    <intent-filter>
+		        <action android:name="android.intent.action.PACKAGE_ADDED"/>
+		        <data android:scheme="package"/> 
+		    </intent-filter> 
+		</receiver>
+    </application>
 </manifest> 
