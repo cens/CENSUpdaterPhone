@@ -11,6 +11,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -39,6 +41,8 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	
 	private static final int RUNNING_INSTALLER = 1;
 	
+	public static final int MESSAGE_UPDATE_LISTS = 1;
+	
 	private Button installButton;
 	
 	private ListView listOfUpdateableApps;
@@ -55,6 +59,52 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	
 	private int uninstallIndex;
 	private String uninstallString;
+	
+	/**
+	 * Runs an update in the background.
+	 * 
+	 * @author John Jenkins
+	 */
+	private class BackgroundUpdate implements Runnable
+	{
+		Context mContext;
+		
+		/**
+		 * Needs an application context to create a new Updater object.
+		 * 
+		 * @param context The Context in which this update is being done.
+		 */
+		public BackgroundUpdate(Context context)
+		{
+			mContext = context;
+		}
+		
+		/**
+		 * Creates a new Updater object and does an update. If any updates are
+		 * found or are pending, it will refresh the updates list. 
+		 */
+		@Override
+		public void run()
+		{
+			Updater updater = new Updater(mContext);
+			if(updater.doUpdate())
+			{
+				messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_LISTS));
+			}
+		}
+	}
+	
+	private Handler messageHandler = new Handler()
+	{
+		@Override
+		public void handleMessage(Message msg)
+		{
+			if(msg.what == MESSAGE_UPDATE_LISTS)
+			{
+				updateLists();
+			}
+		}
+	};
 	
 	/**
 	 * Sets up the UI elements then does an update. An update includes
@@ -206,6 +256,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		 * If the "check for updates" item is clicked, do an update.
 		 */
 		case R.id.do_update:
+			Toast.makeText(this, "Checking for updates...", Toast.LENGTH_LONG).show();
 			doUpdate();
 			return true;
 		
@@ -242,15 +293,12 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	}
 	
 	/**
-	 * Does an update, and as long as no error occurs, it refreshes the lists.
+	 * Runs an update in the background.
 	 */
 	private void doUpdate()
 	{
-		Updater updater = new Updater(this);
-		if(updater.doUpdate())
-		{
-			updateLists();
-		}
+		BackgroundUpdate backgroundUpdate = new BackgroundUpdate(this);
+		(new Thread(backgroundUpdate)).start();
 	}
 	
 	/**
@@ -436,7 +484,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		// If managed,
 		else
 		{
-			Toast.makeText(this, "You cannot stop managing packages because you are a managed user.", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "You are a manged user and this package is already being managed for you. Therefore, you are not allowed to stop managing it.", Toast.LENGTH_SHORT).show();
 		}
 	}
 }

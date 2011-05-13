@@ -53,7 +53,6 @@ public class UpdateReceiver extends BroadcastReceiver implements Runnable
 		Log.initialize(context, Database.LOGGER_APP_NAME);
 		
 		String action = intent.getAction();
-		Log.i(TAG, "Recieved Intent with action: " + action);
 		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 		if(action.equals(Intent.ACTION_BOOT_COMPLETED) || action.equals(UPDATE_ACTION))
 		{

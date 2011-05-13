@@ -240,10 +240,20 @@ public class Updater
 				int managedVal = Integer.decode(info[0].substring(8));
 				if(managedVal == 0)
 				{
+					if(preferences.getBoolean(Database.PREFERENCES_MANAGED, false)) {
+						// If the user is switching managed state, purge the
+						// database of any old updates.
+						mDatabase.removeAllUpdates();
+					}
 					preferences.edit().putBoolean(Database.PREFERENCES_MANAGED, false).commit();
 				}
 				else if(managedVal == 1)
 				{
+					if(preferences.getBoolean(Database.PREFERENCES_MANAGED, false)) {
+						// If the user is switching managed state, purge the
+						// database of any old updates.
+						mDatabase.removeAllUpdates();
+					}
 					preferences.edit().putBoolean(Database.PREFERENCES_MANAGED, true).commit();
 				}
 				else if(managedVal > 1)

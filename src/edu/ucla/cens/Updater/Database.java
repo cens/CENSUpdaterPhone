@@ -276,7 +276,7 @@ public class Database
 	 * 						its updates removed from the database.
 	 * 
 	 * @return Returns the number of records affected by this delete which
-	 * 		   should only ever be 0 or 1.
+	 * 		   should only ever be 0 or 1 or -1 if there was an error.
 	 */
 	public int removeUpdate(String qualifiedName) throws InvalidParameterException
 	{
@@ -286,11 +286,37 @@ public class Database
 		}
 		packagesToBeInstalledTableLock.lock();
 		
-		int result;
+		int result = -1;
 		SQLiteDatabase db = mOpenHelper.getWritableDatabase();
 		try
 		{
 			result = db.delete(PACKAGES_TO_BE_INSTALLED, PACKAGE + "=?", new String[] {qualifiedName});
+		}
+		finally
+		{
+			db.close();
+			packagesToBeInstalledTableLock.unlock();
+		}
+		return result;
+	}
+	
+	/**
+	 * Removes all the updates in the database.
+	 * 
+	 * Caution: With great power comes great responsibility.
+	 * 
+	 * @return Returns the number of updates deleted or -1 if there was an
+	 * 		   error.
+	 */
+	public int removeAllUpdates()
+	{
+		packagesToBeInstalledTableLock.lock();
+		
+		int result = -1;
+		SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+		try
+		{
+			result = db.delete(PACKAGES_TO_BE_INSTALLED, null, null);
 		}
 		finally
 		{
