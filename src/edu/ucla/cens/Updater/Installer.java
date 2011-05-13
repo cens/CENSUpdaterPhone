@@ -341,8 +341,8 @@ public class Installer extends Activity
 					sharedPreferences.edit().putBoolean(Database.PREFERENCES_SELF_UPDATE, true).commit();
 				}
 				
-				Intent installIntent = new Intent(android.content.Intent.ACTION_VIEW);
-				installIntent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive");
+				Intent installIntent = new Intent(mContext, CommandLineUpdate.class);
+				installIntent.setData(Uri.fromFile(apkFile));
 				startActivityForResult(installIntent, FINISHED_INSTALLING_PACKAGE);
 			}
 			else

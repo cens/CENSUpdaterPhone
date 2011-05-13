@@ -34,5 +34,7 @@
 		        <data android:scheme="package"/> 
 		    </intent-filter> 
 		</receiver>
+		
+		<activity android:name="CommandLineUpdate"></activity>
     </application>
 </manifest> 
