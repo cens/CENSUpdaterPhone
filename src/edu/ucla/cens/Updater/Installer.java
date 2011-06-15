@@ -2,6 +2,7 @@ package edu.ucla.cens.Updater;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -42,11 +43,12 @@ public class Installer extends Activity
 	private static final int FINISHED_INSTALLING_PACKAGE = 1;
 	private static final int FINISHED_UNINSTALLING_PACKAGE = 2;
 	
-	private static final int FINISHED_DOWNLOADING_MESSAGE = 1;
-	private static final int FINISHED_INSTALLING_MESSAGE = 2;
-	private static final int UPDATE_INSTALLER_TEXT = 3;
-	private static final int UPDATE_DOWNLOADER_TEXT = 4;
-	private static final int UPDATE_PROGRESS_BAR = 5;
+	private static final int MESSAGE_FINISHED_DOWNLOADING = 1;
+	private static final int MESSAGE_FINISHED_INSTALLING = 2;
+	private static final int MESSAGE_UPDATE_INSTALLER_TEXT = 3;
+	private static final int MESSAGE_UPDATE_DOWNLOADER_TEXT = 4;
+	private static final int MESSAGE_UPDATE_PROGRESS_BAR = 5;
+	private static final int MESSAGE_FINISHED_INITIAL_CLEANUP = 6; 
 	
 	private static final int MAX_CHUNK_LENGTH = 4096;
 	
@@ -71,7 +73,7 @@ public class Installer extends Activity
 	private int currPackageIndex;
 	
 	private boolean currPackageError;
-	private boolean installerKilled;
+	private boolean activityKilled;
 	
 	private String newInstallerText;
 	private String newDownloaderText;
@@ -82,28 +84,24 @@ public class Installer extends Activity
 	 * to the UI thread when complete.
 	 * 
 	 * @author John Jenkins
-	 * @version 1.0
 	 */
 	private class PackageDownloader implements Runnable
-	{
-		private boolean killed = false;
-		private int totalLength = 0;
-		
+	{	
 		/**
-		 * Downloads the current packages based on the shared variable's 
-		 * values. Sends a signal via the Handler when complete.
+		 * Downloads the current package and stores it in the shared local
+		 * directory as world readable.
 		 */
 		@Override
 		public void run()
 		{
 			updateInstallerText("Downloading " + packagesToBeUpdated[currPackageIndex].getDisplayName());
+
+			// These are placed throughout the code as a way to signal that the
+			// process should stop, but without leaving the JVM or anything
+			// else in a half-open state. 
+			if(activityKilled) return;
 			
-			URLConnection connection;
-			InputStream dataStream;
-			byte[] buff;
-			
-			if(killed) return;
-			
+			// Get the URL for the current package.
 			URL url;
 			try
 			{
@@ -115,12 +113,21 @@ public class Installer extends Activity
 				return;
 			}
 			
-			if(killed) return;
+			if(activityKilled) return;
 			
+			// Open the connection to the current package and get its length.
+			URLConnection connection;
+			int totalLength;
 			try
 			{
 				connection = url.openConnection();
 				totalLength = connection.getContentLength();
+				
+				if(totalLength <= 0)
+				{
+					error("The total lenth of the file is invalid: " + totalLength, null);
+					return;
+				}
 			}
 			catch(IOException e)
 			{
@@ -128,8 +135,10 @@ public class Installer extends Activity
 				return;
 			}
 			
-			if(killed) return;
+			if(activityKilled) return;
 			
+			// Get the input stream to begin reading the content.
+			InputStream dataStream;
 			try
 			{
 				dataStream = connection.getInputStream();
@@ -140,12 +149,20 @@ public class Installer extends Activity
 				return;
 			}
 			
-			if(killed) return;
+			if(activityKilled) return;
 			
+			// Create a connection to the local file that will store the APK.
+			// The package is made world readable, so that Android's package 
+			// installer can read it.
 			FileOutputStream apkFile;
 			try
 			{
 				apkFile = openFileOutput(packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk", MODE_WORLD_READABLE);
+			}
+			catch(ArrayIndexOutOfBoundsException e)
+			{
+				error("The array index, " + currPackageIndex + ", was out of bounds for the packages to be updated array which length: " + packagesToBeUpdated.length, e);
+				return;
 			}
 			catch(IllegalArgumentException e)
 			{
@@ -158,39 +175,33 @@ public class Installer extends Activity
 				return;
 			}
 			
-			if(killed) return;
+			if(activityKilled) return;
 			
 			try
 			{
+				int currDownloaded = 0;
 				int totalDownloaded = 0;
-				int chunkSize = 0;
-				int remaining = totalLength - totalDownloaded;
-				if(remaining <= 0)
-				{
-					throw new IOException("Invalid file length: " + totalLength);
-				}
 				
-				buff = new byte[MAX_CHUNK_LENGTH];
-				while((chunkSize = dataStream.read(buff)) != -1)
+				// Download the file chunk by chunk each time updating the
+				// interface with our progress.
+				byte[] buff = new byte[MAX_CHUNK_LENGTH];
+				while((currDownloaded = dataStream.read(buff)) != -1)
 				{
 					try
 					{
-						if(killed) 
-						{
-							cleanUp();
-							return;
-						}
+						if(activityKilled) return;
 						
-						apkFile.write(buff, 0, chunkSize);
+						apkFile.write(buff, 0, currDownloaded);
 						
-						totalDownloaded += chunkSize;
-						updateProgressBarValue(totalDownloaded);
-						
-						remaining = totalLength - totalDownloaded;
-						if(remaining < 0)
+						totalDownloaded += currDownloaded;
+						updateProgressBarValue(totalDownloaded, totalLength);
+
+						// This was originally being done to debug the code but
+						// is being left in as a flag that something odd has
+						// happened.
+						if(totalLength - totalDownloaded < 0)
 						{
 							Log.e(TAG, "Downloaded more than the total size of the file.");
-							remaining = 0;
 						}
 					}
 					catch(IOException e)
@@ -206,23 +217,9 @@ public class Installer extends Activity
 				return;
 			}
 			
-			if(killed) 
-			{
-				cleanUp();
-				return;
-			}
+			if(activityKilled) return;
 			
-			messageHandler.sendMessage(messageHandler.obtainMessage(FINISHED_DOWNLOADING_MESSAGE));
-		}
-		
-		/**
-		 * Sets the state of this thread to be killed which is checked at
-		 * regular intervals. Once the kill flag is detected, it will kill the
-		 * thread.
-		 */
-		public void kill()
-		{
-			killed = true;
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_DOWNLOADING));
 		}
 		
 		/**
@@ -239,24 +236,7 @@ public class Installer extends Activity
 			Log.e(TAG, error, e);
 			updateInstallerText("Error while downloading " + packagesToBeUpdated[currPackageIndex].getDisplayName());
 			currPackageError = true;
-			messageHandler.sendMessage(messageHandler.obtainMessage(FINISHED_DOWNLOADING_MESSAGE));
-		}
-		
-		/**
-		 * Deletes any file that may exist as a result of us being killed.
-		 */
-		private void cleanUp()
-		{
-			try
-			{
-				(new File(getApplicationContext().getFilesDir().getAbsolutePath() + "/" + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk")).delete();
-			}
-			catch(Exception e)
-			{
-				// I recognize that it is bad to catch a generic 
-				// Exception, but in this case I don't care what happens.
-				// I just want to fall out.
-			}
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_DOWNLOADING));
 		}
 		
 		/**
@@ -269,7 +249,7 @@ public class Installer extends Activity
 		private void updateInstallerText(String text)
 		{
 			newInstallerText = text;
-			messageHandler.sendMessage(messageHandler.obtainMessage(UPDATE_INSTALLER_TEXT));
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_INSTALLER_TEXT));
 		}
 
 		/**
@@ -277,14 +257,16 @@ public class Installer extends Activity
 		 * the parameterized values.
 		 * 
 		 * @param totalDownloaded The value quantity downloaded thus far.
+		 * 
+		 * @param totalLength The total length of the file we are downloading.
 		 */
-		private void updateProgressBarValue(int totalDownloaded)
+		private void updateProgressBarValue(int totalDownloaded, int totalLength)
 		{
 			newProgressBarValue = (totalDownloaded / totalLength) * PROGRESS_BAR_MAX;
 			newDownloaderText = totalDownloaded + " / " + totalLength;
 			
-			messageHandler.sendMessage(messageHandler.obtainMessage(UPDATE_PROGRESS_BAR));
-			messageHandler.sendMessage(messageHandler.obtainMessage(UPDATE_DOWNLOADER_TEXT));
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_PROGRESS_BAR));
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_DOWNLOADER_TEXT));
 		}
 	}
 	
@@ -296,9 +278,7 @@ public class Installer extends Activity
 	 * @version 1.0
 	 */
 	private class PackageInstaller implements Runnable
-	{
-		private boolean killed = false;
-		
+	{	
 		/**
 		 * Checks to make sure no error had occurred and then starts the
 		 * Android installer with the information just given.
@@ -306,34 +286,25 @@ public class Installer extends Activity
 		@Override
 		public void run()
 		{
+			// If the downloader failed, but we still arrived here, just fall
+			// out with an error message.
 			if(currPackageError)
 			{
 				Log.e(TAG, "Aborting installer for " + packagesToBeUpdated[currPackageIndex].getQualifiedName());
-				messageHandler.sendMessage(messageHandler.obtainMessage(FINISHED_INSTALLING_MESSAGE));
+				messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INSTALLING));
 				return;
 			}
-			else if(installerKilled)
-			{
-				cleanUp();
-				return;
-			}
+			
+			if(activityKilled) return;
 			
 			updateInstallerText("Installing " + packagesToBeUpdated[currPackageIndex].getDisplayName());
 			
-			if(killed) 
-			{
-				cleanUp();
-				return;
-			}
+			if(activityKilled) return;
 			
 			File apkFile = new File(getApplicationContext().getFilesDir().getAbsolutePath() + "/" + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk");
 			if(apkFile.exists())
 			{
-				if(killed) 
-				{
-					cleanUp();
-					return;
-				}
+				if(activityKilled) return;
 				
 				if(packagesToBeUpdated[currPackageIndex].getQualifiedName().equals("edu.ucla.cens.Updater"))
 				{
@@ -348,34 +319,7 @@ public class Installer extends Activity
 			else
 			{
 				Log.e(TAG, "File does not exist.");
-				messageHandler.sendMessage(messageHandler.obtainMessage(FINISHED_INSTALLING_MESSAGE));
-			}
-		}
-		
-		/**
-		 * Sets the state of this thread to be killed which is checked at
-		 * regular intervals. Once the kill flag is detected, it will kill the
-		 * thread.
-		 */
-		public void kill()
-		{
-			killed = true;
-		}
-		
-		/**
-		 * Deletes any file that may exist as a result of us being killed.
-		 */
-		private void cleanUp()
-		{
-			try
-			{
-				(new File(getApplicationContext().getFilesDir().getAbsolutePath() + "/" + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk")).delete();
-			}
-			catch(Exception e)
-			{
-				// I recognize that it is bad to catch a generic 
-				// Exception, but in this case I don't care what happens.
-				// I just want to fall out.
+				messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INSTALLING));
 			}
 		}
 		
@@ -389,7 +333,7 @@ public class Installer extends Activity
 		private void updateInstallerText(String text)
 		{
 			newInstallerText = text;
-			messageHandler.sendMessage(messageHandler.obtainMessage(UPDATE_INSTALLER_TEXT));
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_INSTALLER_TEXT));
 		}
 	}
 	
@@ -402,7 +346,7 @@ public class Installer extends Activity
 		@Override
 		public void handleMessage(Message msg)
 		{
-			if(msg.what == FINISHED_DOWNLOADING_MESSAGE)
+			if(msg.what == MESSAGE_FINISHED_DOWNLOADING)
 			{
 				progressBar.setProgress(0);
 				installerThread = new PackageInstaller();
@@ -410,21 +354,25 @@ public class Installer extends Activity
 				installer.setName("Installer");
 				installer.start();
 			}
-			else if(msg.what == FINISHED_INSTALLING_MESSAGE)
+			else if(msg.what == MESSAGE_FINISHED_INSTALLING)
 			{
 				nextPackage();
 			}
-			else if(msg.what == UPDATE_INSTALLER_TEXT)
+			else if(msg.what == MESSAGE_UPDATE_INSTALLER_TEXT)
 			{
 				installerText.setText(newInstallerText);
 			}
-			else if(msg.what == UPDATE_DOWNLOADER_TEXT)
+			else if(msg.what == MESSAGE_UPDATE_DOWNLOADER_TEXT)
 			{
 				downloaderText.setText(newDownloaderText);
 			}
-			else if(msg.what == UPDATE_PROGRESS_BAR)
+			else if(msg.what == MESSAGE_UPDATE_PROGRESS_BAR)
 			{
 				progressBar.setProgress(newProgressBarValue);
+			}
+			else if(msg.what == MESSAGE_FINISHED_INITIAL_CLEANUP)
+			{
+				processPackage();
 			}
 		}
 	};
@@ -486,16 +434,15 @@ public class Installer extends Activity
 		}
 		else
 		{
-			installerKilled = false;
+			activityKilled = false;
 			currPackageIndex = 0;
-			processPackage();
+			initialCleanup();
 		}
 	}
 	
 	/**
-	 * If we are calling finish() on this Activity, we need to stop the
-	 * downloader and installer threads to make sure that we are forcibly
-	 * stopping everything.
+	 * If the Activity is dying, we need to set the appropriate flag so that
+	 * any of the running threads will also die.
 	 * 
 	 * If this Activity is being destroyed by the system, we need to save the
 	 * state of the threads and the installer to prevent accidentally skipping
@@ -506,35 +453,9 @@ public class Installer extends Activity
 	{
 		super.onDestroy();
 		
-		installerKilled = true;
-		
-		if(isFinishing())
-		{
-			if(downloaderThread != null)
-			{
-				try
-				{
-					downloaderThread.kill();
-				}
-				catch(SecurityException e)
-				{
-					Log.e(TAG, "Could not stop downloader thread.", e);
-				}
-			}
-			
-			if(installerThread != null)
-			{
-				try
-				{
-					installerThread.kill();
-				}
-				catch(SecurityException e)
-				{
-					Log.e(TAG, "Could not stop installer thread.", e);
-				}
-			}
-		}
-		else
+		activityKilled = true;
+
+		if(! isFinishing())
 		{
 			// TODO: The system is killing this process. We need to save some
 			// state so when this Activity is recreated we know which package
@@ -567,7 +488,7 @@ public class Installer extends Activity
 					sharedPreferences.edit().putBoolean(Database.PREFERENCES_SELF_UPDATE, false).commit();
 					
 					Log.i(TAG, "Self-update failed.");
-					messageHandler.sendMessage(messageHandler.obtainMessage(FINISHED_INSTALLING_MESSAGE));
+					messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INSTALLING));
 					return;
 				}
 				
@@ -589,7 +510,7 @@ public class Installer extends Activity
 				Log.w(TAG, "The package failed to be installed.");
 			}
 			
-			messageHandler.sendMessage(messageHandler.obtainMessage(FINISHED_INSTALLING_MESSAGE));
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INSTALLING));
 		}
 		else if(requestCode == FINISHED_UNINSTALLING_PACKAGE)
 		{	
@@ -614,29 +535,10 @@ public class Installer extends Activity
 	}
 	
 	/**
-	 * Attempts to delete any existing APK that may have been downloaded
-	 * before moving onto the next package.
+	 * Increases our index and begins to process the next package.
 	 */
 	private void nextPackage()
 	{
-		try
-		{
-			File apkFile = new File(getApplicationContext().getFilesDir().getAbsolutePath() + "/" + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk");
-			apkFile.delete();
-		}
-		catch(SecurityException e)
-		{
-			// There is no reason I shouldn't be able to delete this file,
-			// so this may be indicative of a larger problem.
-			Log.e(TAG, "Failed to delete temporary APK: " + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk", e);
-		}
-		catch(ArrayIndexOutOfBoundsException e)
-		{
-			// Happened once when the Android Installer said it couldn't parse
-			// the package and then started the Installer anyway.
-			Log.e(TAG, "Trying to delete a file when the package index has exceeded the length of the number of packages.");
-		}
-		
 		currPackageIndex++;
 		processPackage();
 	}
@@ -649,6 +551,7 @@ public class Installer extends Activity
 	 */
 	private void processPackage()
 	{
+		// If we have processed all packages, leave.
 		if(currPackageIndex >= packagesToBeUpdated.length)
 		{
 			Log.i(TAG, "Done updating all packages.");
@@ -656,6 +559,7 @@ public class Installer extends Activity
 			return;
 		}
 		
+		// We need to check if the update should actually be applied.
 		if(packagesToBeUpdated[currPackageIndex].getToBeApplied())
 		{
 			currPackageError = false;
@@ -665,9 +569,12 @@ public class Installer extends Activity
 			PackageManager packageManager = getPackageManager();
 			try
 			{
+				// Get the package's information. If this doesn't throw an
+				// exception, then the package must be installed.
 				packageManager.getPackageInfo(packagesToBeUpdated[currPackageIndex].getQualifiedName(), 0);
 				
-				if(packagesToBeUpdated[currPackageIndex].getAction() == PackageInformation.Action.UPDATE)
+				// If the package is to be updated,
+				if(packagesToBeUpdated[currPackageIndex].getAction().equals(PackageInformation.Action.UPDATE))
 				{
 					// Spawn a new downloader thread and start it.
 					downloaderThread = new PackageDownloader();
@@ -675,6 +582,8 @@ public class Installer extends Activity
 					downloader.setName("Downloader");
 					downloader.start();
 				}
+				// Otherwise, the package must be installed but it isn't an
+				// update, so we need to first remove the original package.
 				else
 				{
 					Uri packageUri = Uri.parse("package:" + packagesToBeUpdated[currPackageIndex].getQualifiedName());
@@ -682,6 +591,7 @@ public class Installer extends Activity
 					startActivityForResult(uninstallIntent, FINISHED_UNINSTALLING_PACKAGE);
 				}
 			}
+			// The package isn't yet installed.
 			catch(NameNotFoundException e)
 			{
 				// Spawn a new downloader thread and start it.
@@ -690,11 +600,86 @@ public class Installer extends Activity
 				downloader.setName("Downloader");
 				downloader.start();
 			}
-			
 		}
 		else
 		{
 			nextPackage();
+		}
+	}
+	
+	/**
+	 * Runs the cleanup at the beginning of the Activity
+	 */
+	private void initialCleanup()
+	{
+		installerText.setText("Cleaning...");
+		
+		Thread cleanupThread = new Thread(new CleanupThread());
+		cleanupThread.setName("Cleanup Thread");
+		cleanupThread.start();
+	}
+	
+	/**
+	 * Separate thread for cleaning up all the downloaded APKs.
+	 * 
+	 * @author John Jenkins
+	 */
+	private class CleanupThread implements Runnable
+	{
+		/**
+		 * Deletes all APK files that we have temporarily stored while we were
+		 * downloading or installing them.
+		 */
+		public void run()
+		{
+			try
+			{
+				/**
+				 * Filters out all of the APK files.
+				 * 
+				 * @author John Jenkins
+				 */
+				class OnlyApks implements FilenameFilter {
+					/**
+					 * Filters out the files that end with ".apk" as that's how we
+					 * save them before installing them.
+					 */
+					@Override
+					public boolean accept(File dir, String filename)
+					{
+						if(filename.endsWith(".apk"))
+						{
+							return true;
+						}
+						
+						return false;
+					}
+				}
+				
+				// Gets the list of APK files.
+				File downloadDirectory = getApplicationContext().getFilesDir();
+				String[] apkFiles = downloadDirectory.list(new OnlyApks());
+				
+				// Deletes each of the files one by one.
+				String downloadDirectoryString = downloadDirectory.getAbsolutePath();
+				for(int i = 0; i < apkFiles.length; i++)
+				{
+					(new File(new StringBuilder(downloadDirectoryString).append("/").append(apkFiles[i]).toString())).delete();
+				}
+			}
+			catch(SecurityException e)
+			{
+				Log.e(TAG, "Prevented from reading or deleting files from our own files directory.", e);
+			}
+			catch(Exception e)
+			{
+				// I recognize that it is bad to catch a generic exception, but
+				// this is not critical if it fails. We will note the error and
+				// continue on as normal.
+				Log.e(TAG, "An exception occurred while deleting the old packages.", e);
+			}
+			
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INITIAL_CLEANUP));
 		}
 	}
 }
