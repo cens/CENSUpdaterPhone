@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="edu.ucla.cens.Updater"
       android:versionCode="14"
-      android:versionName="1.12">
+      android:versionName="1.11">
       
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
