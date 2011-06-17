@@ -88,7 +88,7 @@ public class Updater
 				Log.i(TAG, "Updates were found. Notifying the user.");
 				
 				NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
-				Notification notification = new Notification(R.drawable.manager, NOTIFICATION_TICKER, System.currentTimeMillis());
+				Notification notification = new Notification(R.drawable.u, NOTIFICATION_TICKER, System.currentTimeMillis());
 				notification.defaults |= Notification.DEFAULT_LIGHTS;
 				notification.flags |= Notification.FLAG_AUTO_CANCEL;
 				
