@@ -26,7 +26,8 @@ public class InstallationEchoer extends BroadcastReceiver
 		Log.i(TAG, "Echoing new package added Intent: " + intent.getData().toString());
 		
 		Intent newIntent = new Intent(INSTALL_ACTION);
-		newIntent.putExtras(intent);		
+		newIntent.putExtras(intent);
+		newIntent.setPackage(intent.getData().getSchemeSpecificPart());
 		newIntent.setData((new Uri.Builder()).scheme(intent.getData().getScheme()).authority(intent.getData().getSchemeSpecificPart()).build());
 		
 		context.sendBroadcast(newIntent);
