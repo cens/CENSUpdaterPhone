@@ -148,7 +148,15 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			
 			sharedPreferences.edit().putBoolean(Database.PREFERENCES_SELF_UPDATE, false).commit();
 		}
-		
+	}
+	
+	/**
+	 * Updates the list of classes in case someone else in the application the
+	 * lists were updated.
+	 */
+	@Override
+	public void onStart() {
+		super.onStart();
 		updateLists();
 	}
 	

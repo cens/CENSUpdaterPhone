@@ -125,7 +125,9 @@ public class Installer extends Activity
 				
 				if(totalLength <= 0)
 				{
-					error("The total lenth of the file is invalid: " + totalLength, null);
+					error("The total lenth of the file is invalid: " + totalLength, new IllegalStateException("The file no longer exists or has an invalid size."));
+					Updater updater = new Updater(mContext);
+					updater.doUpdate();
 					return;
 				}
 			}
