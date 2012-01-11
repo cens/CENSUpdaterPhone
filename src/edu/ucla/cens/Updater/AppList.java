@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.NotificationManager;
 import android.app.TabActivity;
 import android.content.Context;
@@ -17,6 +18,8 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
@@ -49,6 +52,9 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	private ListView listOfManagedApps;
 	
 	private AlertDialog stopManagingDialog;
+	
+	private TextView assetTagTextView;
+	private TextView groupNameTextView;
 	
 	private PackageDescription[] mManagedPackages;
 	private PackageDescription[] mUpdatePackages;
@@ -275,6 +281,84 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			startActivity(new Intent(this, CustomPreferenceActivity.class));
 			return true;
 		 */
+			
+		case R.id.register:
+			final Dialog dialog = new Dialog(this);
+			dialog.setContentView(R.layout.register_popup);
+			dialog.setTitle("Register");
+			
+			WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+			params.width = WindowManager.LayoutParams.FILL_PARENT;
+			dialog.getWindow().setAttributes(params);
+			
+			final Context applicationContext = getApplicationContext();
+			
+			// Setup the register button.
+			((Button) dialog.findViewById(R.id.registerConfirmButton))
+				.setOnClickListener(
+						new OnClickListener() {
+							/**
+							 * Attempt to register and then close the dialog.
+							 */
+							@Override
+							public void onClick(View v) {
+								try {
+									(new Register(
+											applicationContext, 
+											assetTagTextView.getText().toString(), 
+											groupNameTextView.getText().toString()))
+											.doRegister();
+								}
+								catch(NullPointerException e) {
+									Log.e(
+											TAG, 
+											"Exception while registering.", 
+											e);
+									
+									Toast.makeText(
+											applicationContext, 
+											"Registration failed.", 
+											Toast.LENGTH_LONG)
+										.show();
+								}
+								catch(IllegalArgumentException e) {
+									Log.e(
+											TAG, 
+											"Exception while registering.", 
+											e);
+									
+									Toast.makeText(
+											applicationContext, 
+											"Registration failed.", 
+											Toast.LENGTH_LONG)
+										.show();
+								}
+								
+								dialog.dismiss();
+							}
+						}
+				);
+			
+			// Setup the cancel button.
+			((Button) dialog.findViewById(R.id.registerCancelButton))
+				.setOnClickListener(
+						new OnClickListener() {
+							/**
+							 * Close the dialog box.
+							 */
+							@Override
+							public void onClick(View v) {
+								dialog.dismiss();
+							}
+				
+						}
+				);
+			
+			assetTagTextView = (TextView) dialog.findViewById(R.id.registerId);
+			groupNameTextView = (TextView) dialog.findViewById(R.id.registerGroup);
+			
+			dialog.show();
+			return true;
 			
 		/**
 		 * Otherwise, pass the call to the parent.

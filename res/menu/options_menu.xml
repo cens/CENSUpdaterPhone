@@ -10,4 +10,9 @@
 		android:id="@+id/preferences"
 		android:title="Preferences"
 		android:icon="@android:drawable/ic_menu_preferences"/>  -->
+		
+	<item 
+	    android:id="@+id/register"
+	    android:title="Register"
+	    android:icon="@android:drawable/ic_menu_send"/>
 </menu>
