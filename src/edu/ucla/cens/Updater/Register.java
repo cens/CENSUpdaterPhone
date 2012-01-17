@@ -27,7 +27,7 @@ public class Register {
 	private static final String TAG = "CENS.Register";
 
 	private static final String SERVER_URL = 
-			"http://systemsens.cens.ucla.edu/updates/updater/register/";
+			"http://131.179.145.58/updates/updater/register/";
 
 	private static final String JSON_KEY_PHONE_ID = "id";
 	private static final String JSON_KEY_SIM_ID = "sim_id";
