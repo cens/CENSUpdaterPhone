@@ -40,7 +40,7 @@ public class Updater
 {
 	private static final String TAG = "CENS.Updater";
 	
-	private static final String SERVER_URL = "http://systemsens.cens.ucla.edu/updates/updater/get/";
+	private static final String SERVER_URL = "http://131.179.145.58/updates/updater/get/";
 	
 	private static final String NOTIFICATION_HEADER = "CENS Update Manager";
 	private static final String NOTIFICATION_MESSAGE = "Tap here to review updates.";
