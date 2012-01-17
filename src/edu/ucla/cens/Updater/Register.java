@@ -3,14 +3,12 @@ package edu.ucla.cens.Updater;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpParams;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -31,10 +29,14 @@ public class Register {
 	private static final String SERVER_URL = 
 			"http://systemsens.cens.ucla.edu/updates/updater/register/";
 
+	private static final String JSON_KEY_PHONE_ID = "id";
 	private static final String JSON_KEY_SIM_ID = "sim_id";
 	private static final String JSON_KEY_PHONE_NUMBER = "phone_number";
 	private static final String JSON_KEY_ASSET_TAG = "asset_tag";
 	private static final String JSON_KEY_GROUP_NAME = "group_name";
+	
+	private static final String JSON_KEY_RESULT = "result";
+	private static final String JSON_VALUE_SUCCESS = "success";
 
 	private static final String HTTP_KEY_DATA = "info";
 
@@ -90,67 +92,43 @@ public class Register {
 	 * Registers this device with the server.
 	 */
 	public void doRegister() {
+		boolean failed = true;
+		
 		try {
 			Log.i(TAG, "Beginning the registration.");
 
-			String response = doPostRequest();
-
-			Log.i(TAG, "Got response: " + response);
-
-			if (parseResponse(response)) {
-				Log.i(TAG, "Registration was successful. Notifying the user.");
-
-				Toast.makeText(mContext, "Registration successful.",
-						Toast.LENGTH_LONG).show();
-			}
-		} 
-		catch (MalformedURLException e) {
-			Log.e(TAG, "There is a problem with the request URL.", e);
+			doPostRequest();
 			
-			Toast.makeText(
-					mContext, 
-					"Registration failed.", 
-					Toast.LENGTH_LONG)
-				.show();
-		} 
+			failed = false;
+			Log.i(TAG, "Registration was successful.");
+		}
 		catch (IOException e) {
 			Log.e(TAG, "Error while communicating with the server.", e);
-			
+		}
+		catch (IllegalStateException e) {
+			Log.e(TAG, "An internal error occurred.", e);
+		}
+		finally {
 			Toast.makeText(
 					mContext, 
-					"Registration failed.", 
-					Toast.LENGTH_LONG)
-				.show();
-		} 
-		catch (JSONException e) {
-			Log.e(TAG, "Error parsing the JSON in the server response.", e);
-			
-			Toast.makeText(
-					mContext, 
-					"Registration failed.", 
+					(failed) ? "Registration failed." : "Registration succeeded.", 
 					Toast.LENGTH_LONG)
 				.show();
 		}
 	}
 
 	/**
-	 * Posts the necessary information to the server and then returns the
-	 * response from the server as a string.
-	 * 
-	 * @return The response from the server as a string.
-	 * 
-	 * @throws MalformedURLException
-	 *             Thrown if the URL is invalid.
+	 * Posts the necessary information to the server and then checks the HTTP
+	 * status code and response to see if the server succeeded.
 	 * 
 	 * @throws IOException
 	 *             Thrown if there is a problem communicating with the server.
-	 * 
-	 * @throws JSONException
-	 *             Thrown if there is a problem building the data to be sent to
-	 *             the server.
+	 *             
+	 * @throws IllegalStateException
+	 * 			   Thrown if the there is an internal problem making the
+	 * 			   request.
 	 */
-	private String doPostRequest() throws MalformedURLException, IOException,
-			JSONException {
+	private void doPostRequest() throws IOException {
 
 		TelephonyManager telephonyManager = (TelephonyManager) mContext
 				.getSystemService(Context.TELEPHONY_SERVICE);
@@ -161,53 +139,78 @@ public class Register {
 		String phoneNumber = telephonyManager.getLine1Number();
 
 		JSONObject info = new JSONObject();
-		info.put(JSON_KEY_SIM_ID, simId);
-		info.put(JSON_KEY_PHONE_NUMBER, phoneNumber);
-		info.put(JSON_KEY_ASSET_TAG, mAssetTag);
-		info.put(JSON_KEY_GROUP_NAME, mGroupName);
-
-		HttpPost httpPost = new HttpPost(SERVER_URL + identifier);
-		HttpParams httpParams = new BasicHttpParams();
-		httpParams.setParameter(HTTP_KEY_DATA, info.toString());
-		httpPost.setParams(httpParams);
-
-		HttpClient httpClient = new DefaultHttpClient();
-		HttpResponse response = httpClient.execute(httpPost);
-
-		int amountRead;
-		byte[] chunk = new byte[4096];
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		InputStream is = response.getEntity().getContent();
-		while ((amountRead = is.read(chunk)) != -1) {
-			baos.write(chunk, 0, amountRead);
+		try {
+			info.put(JSON_KEY_PHONE_ID, identifier);
+			info.put(JSON_KEY_SIM_ID, simId);
+			info.put(JSON_KEY_PHONE_NUMBER, phoneNumber);
+			info.put(JSON_KEY_ASSET_TAG, mAssetTag);
+			info.put(JSON_KEY_GROUP_NAME, mGroupName);
 		}
-		return baos.toString();
-	}
-
-	/**
-	 * Parses the response from the server and returns true if the server
-	 * successfully registered this phone. Otherwise, it returns false.<br />
-	 * <br />
-	 * This is what needs to be updated if/when we decide to do authentication
-	 * or have a more robust communication with the server.
-	 * 
-	 * @param response
-	 *            The response from the server as a string.
-	 * 
-	 * @return True if the server successfully registered the device; false,
-	 *         otherwise.
-	 * 
-	 * @throws JSONException
-	 *             Thrown if there is an error parsing the response from the
-	 *             server.
-	 */
-	private boolean parseResponse(final String response) throws JSONException {
-
-		JSONObject jsonResponse = new JSONObject(response);
-		if ("success".equals(jsonResponse.get("result"))) {
-			return true;
+		catch(JSONException e) {
+			throw new IllegalStateException(
+					"There was an error creating the JSON data.",
+					e);
 		}
-
-		return false;
+		
+		URL url;
+		try {
+			url = new URL(SERVER_URL);
+		}
+		catch(MalformedURLException e) {
+			throw new IllegalStateException(
+					"The server URL is invalid: " +
+						SERVER_URL);
+		}
+		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		connection.setRequestMethod("POST");
+		connection.setDoOutput(true);
+		connection.setDoInput(true);
+		
+		connection.connect();
+		
+		OutputStream out = connection.getOutputStream();
+		out.write(
+				(HTTP_KEY_DATA + "=" + URLEncoder.encode(info.toString()))
+				.getBytes("UTF8")
+			);
+		out.flush();
+		
+		if(connection.getResponseCode() != HttpURLConnection.HTTP_OK) {			
+			throw new IllegalStateException(
+					"Got HTTP error (" + 
+						connection.getResponseCode() +
+						"): " +
+						connection.getResponseMessage());
+		}
+		else {
+			int bytesRead;
+			byte[] buffer = new byte[4096];
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			
+			InputStream is = connection.getInputStream();
+			
+			while((bytesRead = is.read(buffer)) != -1) {
+				baos.write(buffer, 0, bytesRead);
+			}
+			
+			JSONObject result;
+			try {
+				result = new JSONObject(baos.toString());
+				
+				String resultString = result.getString(JSON_KEY_RESULT);
+				if(! resultString.equals(JSON_VALUE_SUCCESS)) {
+					throw new IllegalStateException(
+							"There was an error with the upload: " +
+								resultString);
+				}
+			}
+			catch(JSONException e) {
+				throw new IllegalStateException(
+						"The server returned a success HTTP response code, " +
+							"but the actual response is invalid: " +
+							baos.toString(),
+						e);
+			}
+		}
 	}
 }
