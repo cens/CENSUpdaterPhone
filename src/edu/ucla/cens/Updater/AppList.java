@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.NotificationManager;
 import android.app.TabActivity;
 import android.content.Context;
@@ -18,8 +17,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
@@ -53,8 +50,8 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	
 	private AlertDialog stopManagingDialog;
 	
-	private TextView assetTagTextView;
-	private TextView groupNameTextView;
+	//private TextView assetTagTextView;
+	//private TextView groupNameTextView;
 	
 	private PackageDescription[] mManagedPackages;
 	private PackageDescription[] mUpdatePackages;
@@ -282,6 +279,9 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			return true;
 		 */
 			
+		/**
+		 * Register the device with an asset tag.
+		 *
 		case R.id.register:
 			final Dialog dialog = new Dialog(this);
 			dialog.setContentView(R.layout.register_popup);
@@ -299,7 +299,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 						new OnClickListener() {
 							/**
 							 * Attempt to register and then close the dialog.
-							 */
+							 *
 							@Override
 							public void onClick(View v) {
 								try {
@@ -345,7 +345,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 						new OnClickListener() {
 							/**
 							 * Close the dialog box.
-							 */
+							 *
 							@Override
 							public void onClick(View v) {
 								dialog.dismiss();
@@ -359,7 +359,8 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			
 			dialog.show();
 			return true;
-			
+		*/
+		
 		/**
 		 * Otherwise, pass the call to the parent.
 		 */
