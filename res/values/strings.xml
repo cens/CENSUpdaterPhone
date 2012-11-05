@@ -6,4 +6,5 @@
     	<item>Minutes</item>
     	<item>Hours</item>
     </string-array>
+    <string name="default_group">CENS</string>
 </resources>

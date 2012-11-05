@@ -6,9 +6,12 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.security.InvalidParameterException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -41,12 +44,17 @@ public class Updater
 	private static final String TAG = "CENS.Updater";
 	
 	private static final String SERVER_URL = 
-			"http://updater.mobilizingcs.org/updates/updater/get/";
+			"http://apps.ohmage.org/uproject/uapp/get/";
 	
 	private static final String NOTIFICATION_HEADER = "CENS Update Manager";
 	private static final String NOTIFICATION_MESSAGE = "Tap here to review updates.";
 	private static final String NOTIFICATION_TICKER = "Updates Available";
 	public static final int NOTIFICATION_ID = 1;
+	
+	/**
+	 * The name of the group to which this device should be registered.
+	 */
+	public static final String PREFERENCE_GROUP_NAME = "groupName";
 	
 	private Context mContext;
 	private Database mDatabase;
@@ -137,25 +145,41 @@ public class Updater
 	 */
 	private String doGetRequest() throws MalformedURLException, IOException
 	{
-		String identifier = ((TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
-		String urlString = SERVER_URL + identifier;
+		// Begin building the request URL.
+		StringBuilder urlBuilder = new StringBuilder(SERVER_URL);
+
+		// Get the device's identifier and add it to the URL.
+		String identifier = 
+			((TelephonyManager) 
+				mContext
+					.getSystemService(Context.TELEPHONY_SERVICE))
+					.getDeviceId();
+		urlBuilder.append(identifier);
 		
+		// Begin building the parameter map.
+		Map<String, String> parameters = new HashMap<String, String>();
+		
+		// Get the package manager.
 		PackageManager packageManager = mContext.getPackageManager();
+		
+		// Get a connection to the database and retrieve the list of managed
+		// packages.
 		Database db = new Database(mContext);
 		LinkedList<String> managed = db.getManaged();
 		ListIterator<String> managedIter = managed.listIterator();
 		
-		String currPackage;
-		boolean queryFailed = false;
+		// Build a JSON object where each key represents a package and its 
+		// value is its version.
 		JSONObject results = new JSONObject();
 		while(managedIter.hasNext())
 		{
-			currPackage = managedIter.next();
+			String currPackage = managedIter.next();
 			try
 			{
 				try
 				{
-					PackageInfo packageInfo = packageManager.getPackageInfo(currPackage, 0);
+					PackageInfo packageInfo = 
+						packageManager.getPackageInfo(currPackage, 0);
 					results.put(currPackage, packageInfo.versionCode);
 				}
 				catch(NameNotFoundException e)
@@ -165,25 +189,52 @@ public class Updater
 			}
 			catch(JSONException e)
 			{
-				Log.e(TAG, "Could not add new record to JSON query.");
-				queryFailed = true;
-				break;
+				Log.e(
+					TAG,
+					"Could not add new record to JSON query: " + currPackage);
 			}
 		}
-		if(!queryFailed)
-		{
-			urlString += "?packages=" + results.toString();
-		}
-		else
-		{
-			Log.i(TAG, "There was a problem getting the list of managed packages and their versions.");
+		parameters.put("packages", results.toString());
+		
+		// Get the group and add it to the parameters.
+		SharedPreferences preferences = 
+			mContext
+				.getSharedPreferences(
+					Database.PACKAGE_PREFERENCES, 
+					Context.MODE_PRIVATE);
+		String groupName = 
+			preferences
+				.getString(
+					PREFERENCE_GROUP_NAME, 
+					mContext.getString(R.string.default_group));
+		parameters.put("group", groupName);
+		
+		// Build the rest of the URL with the parameters.
+		boolean firstPass = true;
+		for(String key : parameters.keySet()) {
+			if(firstPass) {
+				urlBuilder.append('?');
+				firstPass = false;
+			}
+			else {
+				urlBuilder.append('&');
+			}
+			
+			urlBuilder.append(URLEncoder.encode(key, "UTF-8"));
+			urlBuilder.append('=');
+			urlBuilder.append(URLEncoder.encode(parameters.get(key), "UTF-8"));
 		}
 		
-		Log.i(TAG, "Sending request for updates with the following GET request: " + urlString);
+		Log.i(
+			TAG, 
+			"Sending request for updates with the following GET request: " + 
+				urlBuilder.toString());
 		
-		URL url = new URL(urlString);
+		// Build the URL object and connect to the server.
+		URL url = new URL(urlBuilder.toString());
 		URLConnection connection = url.openConnection();
 		
+		// Read the data from the server.
 		String currLine;
 		StringBuilder stringBuilder = new StringBuilder();
 		BufferedReader buffReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -193,6 +244,7 @@ public class Updater
 		}
 		buffReader.close();
 		
+		// Return the response.
 		return(stringBuilder.toString());
 	}
 	

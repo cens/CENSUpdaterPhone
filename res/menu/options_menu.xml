@@ -6,17 +6,15 @@
 		android:title="Check for updates..."
 		android:icon="@android:drawable/ic_menu_upload"/>
 	
-	<!--
 	<item
 		android:id="@+id/preferences"
 		android:title="Preferences"
-		android:icon="@android:drawable/ic_menu_preferences"/>
-	-->
+		android:icon="@android:drawable/ic_menu_preferences"
+		android:visible="false"/>
 		
-	<!-- 
 	<item 
 	    android:id="@+id/register"
 	    android:title="Register"
-	    android:icon="@android:drawable/ic_menu_send"/>
-	-->
+	    android:icon="@android:drawable/ic_menu_send"
+	    android:visible="true"/>
 </menu>

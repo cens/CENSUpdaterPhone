@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.NotificationManager;
 import android.app.TabActivity;
 import android.content.Context;
@@ -17,6 +18,8 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
@@ -49,9 +52,6 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	private ListView listOfManagedApps;
 	
 	private AlertDialog stopManagingDialog;
-	
-	//private TextView assetTagTextView;
-	//private TextView groupNameTextView;
 	
 	private PackageDescription[] mManagedPackages;
 	private PackageDescription[] mUpdatePackages;
@@ -140,17 +140,6 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		listOfManagedApps.setOnItemClickListener(this);
 		
 		newPackages = new LinkedList<PackageDescription>();
-		
-		SharedPreferences sharedPreferences = getSharedPreferences(Database.PACKAGE_PREFERENCES, Context.MODE_PRIVATE);
-		if(sharedPreferences.getBoolean(Database.PREFERENCES_SELF_UPDATE, false))
-		{
-			// Probably should take this off the draw thread, but then we will
-			// need to show a "thinking" dialog.
-			Updater updater = new Updater(this);
-			updater.doUpdate();
-			
-			sharedPreferences.edit().putBoolean(Database.PREFERENCES_SELF_UPDATE, false).commit();
-		}
 	}
 	
 	/**
@@ -160,7 +149,18 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	@Override
 	public void onStart() {
 		super.onStart();
-		updateLists();
+
+		SharedPreferences sharedPreferences = getSharedPreferences(Database.PACKAGE_PREFERENCES, Context.MODE_PRIVATE);
+		if(sharedPreferences.getBoolean(Database.PREFERENCES_SELF_UPDATE, true))
+		{
+			doUpdate();
+			
+			sharedPreferences.edit().putBoolean(Database.PREFERENCES_SELF_UPDATE, false).commit();
+		}
+		else 
+		{
+			updateLists();
+		}
 	}
 	
 	/**
@@ -273,15 +273,14 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		
 		/**
 		 * Launch the preferences menu.
-		 *
+		 */
 		case R.id.preferences:
 			startActivity(new Intent(this, CustomPreferenceActivity.class));
 			return true;
-		 */
 			
 		/**
 		 * Register the device with an asset tag.
-		 *
+		 */
 		case R.id.register:
 			final Dialog dialog = new Dialog(this);
 			dialog.setContentView(R.layout.register_popup);
@@ -293,20 +292,58 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			
 			final Context applicationContext = getApplicationContext();
 			
+			// Get the TextViews used to enter data.
+			final TextView assetTagTextView = 
+				(TextView) dialog.findViewById(R.id.registerId);
+			final TextView groupNameTextView = 
+				(TextView) dialog.findViewById(R.id.registerGroup);
+			
+			// Save the desired group name.
+			SharedPreferences preferences = 
+				getSharedPreferences(
+					Database.PACKAGE_PREFERENCES, 
+					Context.MODE_PRIVATE);
+			groupNameTextView
+				.setText(
+					preferences
+						.getString(
+							Updater.PREFERENCE_GROUP_NAME, 
+							getString(R.string.default_group)));
+			
 			// Setup the register button.
 			((Button) dialog.findViewById(R.id.registerConfirmButton))
 				.setOnClickListener(
 						new OnClickListener() {
 							/**
 							 * Attempt to register and then close the dialog.
-							 *
+							 */
 							@Override
 							public void onClick(View v) {
 								try {
+									// Get the entered values.
+									String assetTag =
+										assetTagTextView.getText().toString();
+									String groupName =
+										groupNameTextView.getText().toString();
+									
+									// Save the desired group name.
+									SharedPreferences preferences = 
+										applicationContext
+											.getSharedPreferences(
+												Database.PACKAGE_PREFERENCES, 
+												Context.MODE_PRIVATE);
+									preferences
+										.edit()
+										.putString(
+											Updater.PREFERENCE_GROUP_NAME,
+											groupName)
+										.commit();
+									
+									// Register the device.
 									(new Register(
 											applicationContext, 
-											assetTagTextView.getText().toString(), 
-											groupNameTextView.getText().toString()))
+											assetTag, 
+											groupName))
 											.doRegister();
 								}
 								catch(NullPointerException e) {
@@ -345,7 +382,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 						new OnClickListener() {
 							/**
 							 * Close the dialog box.
-							 *
+							 */
 							@Override
 							public void onClick(View v) {
 								dialog.dismiss();
@@ -354,12 +391,8 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 						}
 				);
 			
-			assetTagTextView = (TextView) dialog.findViewById(R.id.registerId);
-			groupNameTextView = (TextView) dialog.findViewById(R.id.registerGroup);
-			
 			dialog.show();
 			return true;
-		*/
 		
 		/**
 		 * Otherwise, pass the call to the parent.

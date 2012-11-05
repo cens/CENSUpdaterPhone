@@ -27,7 +27,7 @@ public class Register {
 	private static final String TAG = "CENS.Register";
 
 	private static final String SERVER_URL = 
-			"http://updater.mobilizingcs.org/updates/updater/register/";
+			"http://apps.ohmage.org/uproject/uapp/register/";
 
 	private static final String JSON_KEY_PHONE_ID = "id";
 	private static final String JSON_KEY_SIM_ID = "sim_id";
@@ -62,17 +62,15 @@ public class Register {
 	 * @throws IllegalArgumentException
 	 *             If any of its parameters are obviously invalid.
 	 */
-	public Register(final Context context, final String assetTag,
+	public Register(
+			final Context context, 
+			final String assetTag,
 			final String groupName) {
+
+		Log.i(TAG, "Creating a Register object.");
 
 		if (context == null) {
 			throw new NullPointerException("The Context is null.");
-		}
-		if (assetTag == null) {
-			throw new NullPointerException("The asset tag is null.");
-		}
-		if (assetTag.length() == 0) {
-			throw new IllegalArgumentException("The asset tag is invalid.");
 		}
 		if (groupName == null) {
 			throw new NullPointerException("The group name is null.");
@@ -81,8 +79,6 @@ public class Register {
 			throw new IllegalArgumentException("The group name is invalid.");
 		}
 
-		Log.i(TAG, "Creating a Register object.");
-
 		mContext = context;
 		mAssetTag = assetTag;
 		mGroupName = groupName;
@@ -90,8 +86,10 @@ public class Register {
 
 	/**
 	 * Registers this device with the server.
+	 * 
+	 * @return Returns true iff the registration succeeds.
 	 */
-	public void doRegister() {
+	public boolean doRegister() {
 		boolean failed = true;
 		
 		try {
@@ -115,6 +113,8 @@ public class Register {
 					Toast.LENGTH_LONG)
 				.show();
 		}
+		
+		return failed;
 	}
 
 	/**
