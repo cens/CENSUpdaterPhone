@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     
-    <string name="app_name">CENS App Manager</string>
+    <string name="app_name">App Manager</string>
     <string-array name="time_ranges">
     	<item>Minutes</item>
     	<item>Hours</item>
     </string-array>
-    <string name="default_group">CENS</string>
+    <string name="default_group">Nexleaf</string>
 </resources>

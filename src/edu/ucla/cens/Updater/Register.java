@@ -9,6 +9,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -27,7 +31,7 @@ public class Register {
 	private static final String TAG = "CENS.Register";
 
 	private static final String SERVER_URL = 
-			"http://apps.ohmage.org/uproject/uapp/register/";
+			"https://updater.nexleaf.org/updater/uapp/register/";
 
 	private static final String JSON_KEY_PHONE_ID = "id";
 	private static final String JSON_KEY_SIM_ID = "sim_id";
@@ -152,6 +156,28 @@ public class Register {
 					e);
 		}
 		
+		// Create an HostnameVerifier that hardwires the expected hostname.
+		// Note that is different than the URL's hostname:
+		// example.com versus example.org
+		HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+		    @Override
+		    public boolean verify(String hostname, SSLSession session) {
+		        HostnameVerifier hv =
+		            HttpsURLConnection.getDefaultHostnameVerifier();
+		        if (hv.verify("coldtrace.org", session)) {
+		        	return true;
+		        }
+		        if (hv.verify("nexleaf.org", session)) {
+		        	return true;
+		        }
+		        if (hv.verify("updater.nexleaf.org", session)) {
+		        	return true;
+		        }
+		        return false;
+		    }
+		};
+
+		
 		URL url;
 		try {
 			url = new URL(SERVER_URL);
@@ -161,7 +187,9 @@ public class Register {
 					"The server URL is invalid: " +
 						SERVER_URL);
 		}
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+		connection.setHostnameVerifier(hostnameVerifier);
+
 		connection.setRequestMethod("POST");
 		connection.setDoOutput(true);
 		connection.setDoInput(true);

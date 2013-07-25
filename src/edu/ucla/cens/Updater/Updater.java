@@ -13,6 +13,10 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Map;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,7 +48,7 @@ public class Updater
 	private static final String TAG = "CENS.Updater";
 	
 	private static final String SERVER_URL = 
-			"http://apps.ohmage.org/uproject/uapp/get/";
+			"https://updater.nexleaf.org/updater/uapp/get/";
 	
 	private static final String NOTIFICATION_HEADER = "CENS Update Manager";
 	private static final String NOTIFICATION_MESSAGE = "Tap here to review updates.";
@@ -229,10 +233,29 @@ public class Updater
 			TAG, 
 			"Sending request for updates with the following GET request: " + 
 				urlBuilder.toString());
-		
+
+		HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+		    @Override
+		    public boolean verify(String hostname, SSLSession session) {
+		        HostnameVerifier hv =
+		            HttpsURLConnection.getDefaultHostnameVerifier();
+		        if (hv.verify("coldtrace.org", session)) {
+		        	return true;
+		        }
+		        if (hv.verify("nexleaf.org", session)) {
+		        	return true;
+		        }
+		        if (hv.verify("updater.nexleaf.org", session)) {
+		        	return true;
+		        }
+		        return false;
+		    }
+		};
+
 		// Build the URL object and connect to the server.
 		URL url = new URL(urlBuilder.toString());
-		URLConnection connection = url.openConnection();
+		HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+		connection.setHostnameVerifier(hostnameVerifier);
 		
 		// Read the data from the server.
 		String currLine;
