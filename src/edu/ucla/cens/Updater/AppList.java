@@ -29,6 +29,7 @@ import android.widget.ListView;
 import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.ucla.cens.Updater.utils.AppManager;
 import edu.ucla.cens.systemlog.Log;
 
 /**
@@ -118,7 +119,9 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	{
 		super.onCreate(savedInstance);
 		setContentView(R.layout.app_list);
-		
+		AppManager.create(getApplicationContext());
+        AppManager.get().setActivity(this);
+
 		Log.initialize(this, Database.LOGGER_APP_NAME);
 		
 		mTabHost = getTabHost();
@@ -266,7 +269,8 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		/**
 		 * If the "check for updates" item is clicked, do an update.
 		 */
-		case R.id.do_update:
+		case R.id.menu_update:
+			Log.d(TAG, "starting update");
 			Toast.makeText(this, "Checking for updates...", Toast.LENGTH_LONG).show();
 			doUpdate();
 			return true;
@@ -274,14 +278,15 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		/**
 		 * Launch the preferences menu.
 		 */
-		case R.id.preferences:
+		case R.id.menu_preferences:
+			Log.d(TAG, "starting CustomPreferenceActivity");
 			startActivity(new Intent(this, CustomPreferenceActivity.class));
 			return true;
 			
 		/**
 		 * Register the device with an asset tag.
 		 */
-		case R.id.register:
+		case R.id.menu_register:
 			final Dialog dialog = new Dialog(this);
 			dialog.setContentView(R.layout.register_popup);
 			dialog.setTitle("Register");
@@ -610,7 +615,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		// If managed,
 		else
 		{
-			Toast.makeText(this, "You are a manged user and this package is already being managed for you. Therefore, you are not allowed to stop managing it.", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "You are a managed user and this package is already being managed for you. Therefore, you are not allowed to stop managing it.", Toast.LENGTH_SHORT).show();
 		}
 	}
 }

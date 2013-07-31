@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -26,6 +27,9 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.ucla.cens.Updater.utils.AppManager;
+import edu.ucla.cens.Updater.utils.ApplicationManager;
+import edu.ucla.cens.Updater.utils.OnInstalledPackage;
 import edu.ucla.cens.systemlog.Log;
 
 /**
@@ -303,7 +307,8 @@ public class Installer extends Activity
 			
 			if(activityKilled) return;
 			
-			File apkFile = new File(getApplicationContext().getFilesDir().getAbsolutePath() + "/" + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk");
+			String apkpath = getApplicationContext().getFilesDir().getAbsolutePath() + "/" + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk";
+			File apkFile = new File(apkpath);
 			if(apkFile.exists())
 			{
 				if(activityKilled) return;
@@ -314,9 +319,52 @@ public class Installer extends Activity
 					sharedPreferences.edit().putBoolean(Database.PREFERENCES_SELF_UPDATE, true).commit();
 				}
 				
+				
+				/*
 				Intent installIntent = new Intent(android.content.Intent.ACTION_VIEW);
 				installIntent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive");
+				
+				
 				startActivityForResult(installIntent, FINISHED_INSTALLING_PACKAGE);
+				*/
+				ApplicationManager am;
+				Log.d(TAG, "am starting istall: " + apkpath);
+				try {
+					am = new ApplicationManager(getApplicationContext());
+					am.setOnInstalledPackaged(new OnInstalledPackage() {
+						 
+					    public void packageInstalled(String packageName, int returnCode, String message) {
+					    	String msg;
+					        if (returnCode == ApplicationManager.INSTALL_SUCCEEDED) {
+					        	msg = "Install succeeded for " + packageName + ": " + message;
+					            Log.d(TAG, msg);
+								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());
+								updateInstallerText("Installed " + packageName);
+					        } else {
+					        	msg = "Install failed for " + packageName + ": rc=" + returnCode + ": " + message;
+					            Log.e(TAG, msg);
+								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());
+								updateInstallerText("Failed to installed " + packageName);
+					        }
+					        // do async toast to run on ui thread
+				        	AppManager.get().doToastMessageAsync(msg);
+							messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INSTALLING));
+					    }
+					});
+					//am.installPackage(apkFile);
+					am.installPackageViaShell(apkpath);
+				} catch (SecurityException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (NoSuchMethodException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} finally {
+				}
+				
 			}
 			else
 			{
@@ -338,6 +386,7 @@ public class Installer extends Activity
 			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_INSTALLER_TEXT));
 		}
 	}
+	
 	
 	/**
 	 * Handles messages sent by the local Threads such as updating the text

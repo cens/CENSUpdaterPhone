@@ -3,9 +3,10 @@ package edu.ucla.cens.Updater;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.Proxy;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.security.InvalidParameterException;
 import java.util.HashMap;
@@ -32,7 +33,10 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.SQLException;
 import android.telephony.TelephonyManager;
+import android.widget.Toast;
 import edu.ucla.cens.Updater.PackageInformation.Action;
+import edu.ucla.cens.Updater.model.SettingsModel;
+import edu.ucla.cens.Updater.utils.AppManager;
 import edu.ucla.cens.systemlog.Log;
 
 /**
@@ -62,7 +66,12 @@ public class Updater
 	
 	private Context mContext;
 	private Database mDatabase;
-	
+	private Proxy proxy;
+
+	private SettingsModel model = SettingsModel.get();
+	{
+		setupProxy();
+	}
 	/**
 	 * Sets up this Updater.
 	 * 
@@ -88,6 +97,8 @@ public class Updater
 	 */
 	public boolean doUpdate()
 	{
+		String msg = null;
+		Exception err = null;
 		try
 		{
 			Log.i(TAG, "Beginning update check.");
@@ -98,7 +109,6 @@ public class Updater
 			
 			if(parseResponse(response))
 			{
-				Log.i(TAG, "Updates were found. Notifying the user.");
 				
 				NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
 				Notification notification = new Notification(R.drawable.u, NOTIFICATION_TICKER, System.currentTimeMillis());
@@ -107,31 +117,45 @@ public class Updater
 				
 				Intent notificationIntent = new Intent(mContext, Installer.class);
 				notificationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, notificationIntent, 0);
-
-				notification.setLatestEventInfo(mContext, NOTIFICATION_HEADER, NOTIFICATION_MESSAGE, pendingIntent);
-				notificationManager.notify(NOTIFICATION_ID, notification);
+				Log.d(TAG, "model .isAutoInstall(): " + model .isAutoInstall());
+				if (model .isAutoInstall()) {
+					Log.i(TAG, "Updates were found. Started unassisted installation.");
+					//Intent intent = new Intent(mContext, Installer.class);
+					//intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				    mContext.startActivity(notificationIntent);
+				} else {
+					Log.i(TAG, "Updates were found. Notifying the user.");
+					PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, notificationIntent, 0);
+					notification.setLatestEventInfo(mContext, NOTIFICATION_HEADER, NOTIFICATION_MESSAGE, pendingIntent);
+					notificationManager.notify(NOTIFICATION_ID, notification);
+					
+				}
 			}
 			
 			return true;
 		}
 		catch(MalformedURLException e)
 		{
-			Log.e(TAG, "There is a problem with the request URL.", e);
+			msg = "There is a problem with the request URL.";
+			err = e;
 		}
 		catch(IOException e)
 		{
-			Log.e(TAG, "Error while communicating with the server.", e);
+			msg = "Error while communicating with the server.";
+			err = e;
 		}
 		catch(InvalidParameterException e)
 		{
-			Log.e(TAG, "Server response was invalid.", e);
+			msg = "Server response was invalid.";
+			err = e;
 		}
 		catch(JSONException e)
 		{
-			Log.e(TAG, "Error parsing the JSON in the server response.", e);
+			msg = "Error parsing the JSON in the server response.";
+			err = e;
 		}
-		
+		if (err!=null) Log.e(TAG, msg, err);
+		//doToastMessage(msg);
 		return false;
 	}
 	
@@ -254,7 +278,14 @@ public class Updater
 
 		// Build the URL object and connect to the server.
 		URL url = new URL(urlBuilder.toString());
-		HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+		HttpsURLConnection connection;
+    	if (Constants.USE_PROXY) {
+    		Log.d(TAG, "Using proxy: " + proxy);
+    		connection = (HttpsURLConnection) url.openConnection(proxy);
+    	} else {
+    		connection = (HttpsURLConnection) url.openConnection();
+    		
+    	}
 		connection.setHostnameVerifier(hostnameVerifier);
 		
 		// Read the data from the server.
@@ -598,4 +629,18 @@ public class Updater
 			return false;
 		}
 	}
+	
+    /**
+     * Sets up common request features, such as User-Agent, proxy etc.
+     * @param request
+     */
+    private void setupProxy() {
+    	if (Constants.USE_PROXY) {
+//    		Proxy proxy = new Proxy(Proxy.HTTP, new InetSocketAddress("10.0.0.1", 8080));
+    		proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(Constants.PROXY_HOST, Constants.PROXY_PORT));
+    		//System.setProperty("http.proxyPort", Integer.toString(Constants.PROXY_PORT));
+    		//System.setProperty("http.proxyHost", Constants.PROXY_HOST);
+    	}
+	}
+	
 }
