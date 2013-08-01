@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="edu.ucla.cens.Updater"
-      android:versionCode="120"
-      android:versionName="1.20.0801">
+      android:versionCode="121"
+      android:versionName="1.21.0801">
       
     <uses-sdk android:minSdkVersion="4" android:targetSdkVersion="4" />
     

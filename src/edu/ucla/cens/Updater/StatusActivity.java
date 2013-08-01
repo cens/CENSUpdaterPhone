@@ -42,6 +42,7 @@ public class StatusActivity extends Activity  implements OnChangeListener<Status
 
 	private static final String template1 = "<em>Last error:</em> %s: %s<br/>";
 	private static final String template2 = "<em>Last successful install:</em> %s: %s<br/>";
+	private static final String template3 = "<em>Last download:</em> %s: %s<br/>";
 	
 	private String renderHtmlStatus() {
 		String ret = "";
@@ -52,6 +53,10 @@ public class StatusActivity extends Activity  implements OnChangeListener<Status
 		if (model.getLastCheckTs()!= null) {
 			ret += String.format(template2,
 					model.getLastCheckTs(), model.getLastCheckMessage());
+		}
+		if (model.getLastDownloadTs()!= null) {
+			ret += String.format(template3,
+					model.getLastDownloadTs(), model.getLastDownloadMessage());
 		}
 		if (ret.length() == 0) {
 			ret = "<br/><em>There are no updates to report yet</em><br>";

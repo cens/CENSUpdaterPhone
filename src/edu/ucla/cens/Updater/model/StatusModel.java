@@ -20,6 +20,16 @@ public class StatusModel extends SimpleObservable<StatusModel> {
 
 	private Map<String, String> packageUpdates = new HashMap<String, String>();
 	
+	private String lastDownloadTs = null;
+	private String lastDownloadMessage = "";
+	public String getLastDownloadTs() {
+		return lastDownloadTs;
+	}
+
+	public String getLastDownloadMessage() {
+		return lastDownloadMessage;
+	}
+
 	private String lastCheckTs = null;
 	private String lastCheckMessage = "";
 	private String lastErrorTs = null;
@@ -89,6 +99,13 @@ public class StatusModel extends SimpleObservable<StatusModel> {
 
 	public String getLastErrorMessage() {
 		return lastErrorMessage;
+	}
+
+	public void addDownloadMessage(String message) {
+		lastDownloadTs = new Date().toString();
+		lastDownloadMessage = message;
+		notifyObservers(this);
+		
 	}
 	
 }

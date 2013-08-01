@@ -33,10 +33,9 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.SQLException;
 import android.telephony.TelephonyManager;
-import android.widget.Toast;
 import edu.ucla.cens.Updater.PackageInformation.Action;
 import edu.ucla.cens.Updater.model.SettingsModel;
-import edu.ucla.cens.Updater.utils.AppManager;
+import edu.ucla.cens.Updater.model.StatusModel;
 import edu.ucla.cens.Updater.utils.Constants;
 import edu.ucla.cens.systemlog.Log;
 
@@ -116,17 +115,17 @@ public class Updater
 				notification.defaults |= Notification.DEFAULT_LIGHTS;
 				notification.flags |= Notification.FLAG_AUTO_CANCEL;
 				
-				Intent notificationIntent = new Intent(mContext, Installer.class);
-				notificationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				Intent intent = new Intent(mContext, Installer.class);
+				intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 				Log.d(TAG, "model .isAutoInstall(): " + model .isAutoInstall());
 				if (model .isAutoInstall()) {
 					Log.i(TAG, "Updates were found. Started unassisted installation.");
 					//Intent intent = new Intent(mContext, Installer.class);
 					//intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				    mContext.startActivity(notificationIntent);
+				    mContext.startActivity(intent);
 				} else {
 					Log.i(TAG, "Updates were found. Notifying the user.");
-					PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, notificationIntent, 0);
+					PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, intent, 0);
 					notification.setLatestEventInfo(mContext, NOTIFICATION_HEADER, NOTIFICATION_MESSAGE, pendingIntent);
 					notificationManager.notify(NOTIFICATION_ID, notification);
 					
@@ -155,7 +154,10 @@ public class Updater
 			msg = "Error parsing the JSON in the server response.";
 			err = e;
 		}
-		if (err!=null) Log.e(TAG, msg, err);
+		if (err!=null) {
+			Log.e(TAG, msg, err);
+			StatusModel.get().addDownloadMessage(err.toString());
+		}
 		//doToastMessage(msg);
 		return false;
 	}
@@ -581,11 +583,12 @@ public class Updater
 	private boolean checkInstalledVersionVsUpdate(PackageInfo packageInfo, PackageInformation packageInformation)
 	{
 		boolean result = false;
-		
+		String msg;
 		if(packageInfo.versionCode < packageInformation.getVersion())
 		{
+			msg = "We received an update of the package, " + packageInformation.getQualifiedName() + ", so we will add it to the list of updates.";
 			// We are not up-to-date.
-			Log.i(TAG, "We received an update of the package, " + packageInformation.getQualifiedName() + ", so we will add it to the list of updates.");
+			Log.i(TAG, msg);
 			result = addAsUpdate(packageInformation);
 		}
 		else if(packageInfo.versionCode > packageInformation.getVersion())
@@ -594,16 +597,18 @@ public class Updater
 			// For now, we are ignoring this case and assuming that
 			// the old version number is an error and not going to
 			// corrupt ourselves (further).
-			Log.i(TAG, "We received an update of the package, " + packageInformation.getQualifiedName() + ", where the installed version is greater than this 'update'. Therefore, we will remove any pending updates for this package.");
+			msg = "We received an update of the package, " + packageInformation.getQualifiedName() + ", where the installed version is greater than this 'update'. Therefore, we will remove any pending updates for this package.";
+			Log.i(TAG, msg);
 			mDatabase.removeUpdate(packageInformation.getQualifiedName());
 		}
 		else
 		{
 			// Everything is in sync.
-			Log.i(TAG, "We received an update of the package, " + packageInformation.getQualifiedName() + ", with the same version as the one we have now, so we will remove any pending, unnecessary updates.");
+			msg = "We received an update of the package, " + packageInformation.getQualifiedName() + ", with the same version as the one we have now, so we will remove any pending, unnecessary updates.";
+			Log.i(TAG, msg);
 			mDatabase.removeUpdate(packageInformation.getQualifiedName());
 		}
-		
+		StatusModel.get().addDownloadMessage(msg);
 		return result;
 	}
 	
