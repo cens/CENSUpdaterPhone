@@ -286,7 +286,13 @@ public class ApplicationManager {
      * @hide
      */
     public static final int INSTALL_FAILED_INTERNAL_ERROR = -110;
-	
+
+    
+    // our private error code
+    public static final int INSTALL_PARSE_FAILED_OTHER = -1000;
+    // our private error code
+    public static final int INSTALL_FAILED_OTHER = -2000;
+    
 	/**
 	 * Installation results notifier
 	 */
@@ -305,7 +311,7 @@ public class ApplicationManager {
 	}
 	
 	public void installPackageViaShell(String apkFile) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-		String cmd = "pm install " + apkFile;
+		String cmd = "pm install -r " + apkFile;
 		String msg = "";
 		int rc = INSTALL_SUCCEEDED;
 		try {
@@ -313,9 +319,16 @@ public class ApplicationManager {
 			Log.i(TAG, "Succeeded to exec " + cmd + ": " + msg);
 			if (msg.indexOf("INSTALL_FAILED_ALREADY_EXISTS") >= 0) {
 				rc = INSTALL_FAILED_ALREADY_EXISTS;
-			}
+			} else if (msg.indexOf("INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES") >= 0) {
+				rc = INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES;
+			} else if (msg.indexOf("INSTALL_PARSE_FAILED") >= 0) {
+				rc = INSTALL_PARSE_FAILED_OTHER;
+			} else if (msg.indexOf("INSTALL_AILED") >= 0) {
+				rc = INSTALL_FAILED_OTHER;
+			} 
 		} catch (RuntimeException e) {
 			Log.e(TAG, "Failed to exec " + cmd + ": " + e);
+			msg = e.toString();
 			rc = INSTALL_FAILED_INTERNAL_ERROR;
 		}
 		if (onInstalledPackage != null) {

@@ -5,7 +5,6 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -27,6 +26,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.ucla.cens.Updater.model.StatusModel;
 import edu.ucla.cens.Updater.utils.AppManager;
 import edu.ucla.cens.Updater.utils.ApplicationManager;
 import edu.ucla.cens.Updater.utils.OnInstalledPackage;
@@ -82,6 +82,8 @@ public class Installer extends Activity
 	private String newInstallerText;
 	private String newDownloaderText;
 	private int newProgressBarValue;
+	
+	private StatusModel model = StatusModel.get();
 	
 	/**
 	 * Private class that downloads the current file and sends a message back
@@ -340,11 +342,13 @@ public class Installer extends Activity
 					            Log.d(TAG, msg);
 								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());
 								updateInstallerText("Installed " + packageName);
+								model.addInfoMessage(msg);
 					        } else {
 					        	msg = "Install failed for " + packageName + ": rc=" + returnCode + ": " + message;
 					            Log.e(TAG, msg);
 								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());
 								updateInstallerText("Failed to installed " + packageName);
+								model.addErrorMessage(msg);
 					        }
 					        // do async toast to run on ui thread
 				        	AppManager.get().doToastMessageAsync(msg);

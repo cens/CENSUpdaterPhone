@@ -1,4 +1,4 @@
-package edu.ucla.cens.Updater;
+package edu.ucla.cens.Updater.utils;
 
 public class Constants {
 

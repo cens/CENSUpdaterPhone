@@ -37,6 +37,7 @@ import android.widget.Toast;
 import edu.ucla.cens.Updater.PackageInformation.Action;
 import edu.ucla.cens.Updater.model.SettingsModel;
 import edu.ucla.cens.Updater.utils.AppManager;
+import edu.ucla.cens.Updater.utils.Constants;
 import edu.ucla.cens.systemlog.Log;
 
 /**

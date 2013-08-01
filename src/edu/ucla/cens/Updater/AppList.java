@@ -128,6 +128,15 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	    
 	    mTabHost.addTab(mTabHost.newTabSpec("updateableTabSpec").setIndicator("Updates").setContent(R.id.updateable_list_tab));
 	    mTabHost.addTab(mTabHost.newTabSpec("managedTabSpec").setIndicator("Managed Apps").setContent(R.id.managed_list_tab));
+	    //mTabHost.addTab(mTabHost.newTabSpec("statusTabSpec").setIndicator("Status").setContent(R.id.status_tab));
+
+	    Intent intent = new Intent().setClass(this, StatusActivity.class);
+
+        String tabText = "";
+        tabText = "Status";
+        TabHost.TabSpec spec = mTabHost.newTabSpec("status").setIndicator(tabText)
+                      .setContent(intent);
+        mTabHost.addTab(spec);
 	    
 	    mTabHost.setCurrentTab(0);
 		
