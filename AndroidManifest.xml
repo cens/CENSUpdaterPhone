@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="edu.ucla.cens.Updater"
-      android:versionCode="121"
-      android:versionName="1.21.0801">
+      android:versionCode="122"
+      android:versionName="1.22.0802">
       
-    <uses-sdk android:minSdkVersion="4" android:targetSdkVersion="4" />
+    <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="8" />
     
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>

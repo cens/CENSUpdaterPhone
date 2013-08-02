@@ -79,5 +79,9 @@ public class AppManager {
 				}
 		});
     }
+    
+    // ***************** Domain specific public functions ***************
+    
+    
 
 }

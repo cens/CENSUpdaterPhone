@@ -17,6 +17,10 @@ public class Exec {
      */
 	private static final int BUFF_LEN = 1024;
 	
+	/**
+	 * Shell to execute. Bu default, it's su (superuser), but could
+	 * be also sh in non-root execution is required.
+	 */
 	private String shell;
 	
     public Exec(String shell) {

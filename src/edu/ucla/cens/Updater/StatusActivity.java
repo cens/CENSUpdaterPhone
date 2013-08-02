@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.text.Html;
 import android.widget.TextView;
 
-
 public class StatusActivity extends Activity  implements OnChangeListener<StatusModel>{
 
 	private TextView statusText;
@@ -34,9 +33,13 @@ public class StatusActivity extends Activity  implements OnChangeListener<Status
 			}
 		});
 	}
+	
+	/**
+	 * Refresh the view.
+	 */
 	private void refreshViews() {
 		model.dump();
-		String source = renderHtmlStatus();
+		String source = renderStatusHtml();
 		statusText.setText(Html.fromHtml(source));
 	}
 
@@ -44,7 +47,11 @@ public class StatusActivity extends Activity  implements OnChangeListener<Status
 	private static final String template2 = "<em>Last successful install:</em> %s: %s<br/>";
 	private static final String template3 = "<em>Last download:</em> %s: %s<br/>";
 	
-	private String renderHtmlStatus() {
+	/**
+	 * Renders status in rich format in HTML.
+	 * @return the html
+	 */
+	private String renderStatusHtml() {
 		String ret = "";
 		if (model.getLastErrorTs()!= null) {
 			ret += String.format(template1, 

@@ -1,6 +1,7 @@
 package edu.ucla.cens.Updater;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 
 import android.app.AlertDialog;
@@ -11,6 +12,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -19,16 +21,18 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckedTextView;
 import android.widget.ListView;
 import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.ucla.cens.Updater.model.AppInfoModel;
+import edu.ucla.cens.Updater.utils.AppInfoCache;
 import edu.ucla.cens.Updater.utils.AppManager;
 import edu.ucla.cens.systemlog.Log;
 
@@ -47,9 +51,9 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	
 	public static final int MESSAGE_UPDATE_LISTS = 1;
 	
-	private Button installButton;
+	//private Button installButton;
 	
-	private ListView listOfUpdateableApps;
+	//private ListView listOfUpdateableApps;
 	private ListView listOfManagedApps;
 	
 	private AlertDialog stopManagingDialog;
@@ -63,6 +67,14 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	
 	private int uninstallIndex;
 	private String uninstallString;
+	
+	// cache of extended info about application. complements the contents
+	// of the db
+	private AppInfoCache cache = AppInfoCache.get();
+	
+	
+	private static final int COLOR_ORANGE = Color.parseColor("#FF5500");
+	
 	
 	/**
 	 * Runs an update in the background.
@@ -126,7 +138,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		
 		mTabHost = getTabHost();
 	    
-	    mTabHost.addTab(mTabHost.newTabSpec("updateableTabSpec").setIndicator("Updates").setContent(R.id.updateable_list_tab));
+	    //mTabHost.addTab(mTabHost.newTabSpec("updateableTabSpec").setIndicator("Updates").setContent(R.id.updateable_list_tab));
 	    mTabHost.addTab(mTabHost.newTabSpec("managedTabSpec").setIndicator("Managed Apps").setContent(R.id.managed_list_tab));
 	    //mTabHost.addTab(mTabHost.newTabSpec("statusTabSpec").setIndicator("Status").setContent(R.id.status_tab));
 
@@ -140,13 +152,14 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	    
 	    mTabHost.setCurrentTab(0);
 		
+	    /*
 		installButton = (Button) findViewById(R.id.install_updates);
 		installButton.setOnClickListener(this);
 		
 		listOfUpdateableApps = (ListView) findViewById(R.id.updateable_list);
 		listOfUpdateableApps.setEmptyView(findViewById(R.id.updateable_list_empty_text));
 		listOfUpdateableApps.setOnItemClickListener(this);
-		
+		*/
 		listOfManagedApps = (ListView) findViewById(R.id.managed_list);
 		listOfManagedApps.setEmptyView(findViewById(R.id.managed_list_empty_text));
 		listOfManagedApps.setOnItemClickListener(this);
@@ -199,6 +212,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		 * list of updateable applications to the list of managed packages.
 		 * Then, it begins the installer.
 		 */
+		/*
 		if(v == installButton)
 		{
 			Database db = new Database(this);
@@ -215,6 +229,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			Intent intentToFire = new Intent(this, Installer.class);
 			startActivityForResult(intentToFire, RUNNING_INSTALLER);
 		}
+		*/
 	}
 	
 	/**
@@ -252,15 +267,15 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		 * If the list of package updates was clicked, the following function
 		 * is called.
 		 */
-		if(parent == listOfUpdateableApps)
-		{
-			listOfUpdateableAppsClick((CheckedTextView) view, position);
-		}
+		//if(parent == listOfUpdateableApps)
+		//{
+		//	listOfUpdateableAppsClick((CheckedTextView) view, position);
+		//}
 		/**
 		 * If the list of managed packages was clicked, the following function
 		 * is called.
 		 */
-		else if(parent == listOfManagedApps)
+		if(parent == listOfManagedApps)
 		{
 			listOfManagedAppsClick((TextView) view, position);
 		}	
@@ -477,15 +492,16 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		{
 			numPackages = mUpdatePackages.length;
 		}
-		listOfUpdateableApps.setAdapter(new ArrayAdapter<PackageDescription>(this, R.layout.checked_list_item, mUpdatePackages));
 		
-		boolean buttonEnabled = false;
+		//listOfUpdateableApps.setAdapter(new ArrayAdapter<PackageDescription>(this, R.layout.checked_list_item, mUpdatePackages));
+		
+		//boolean buttonEnabled = false;
 		for(int i = 0; i < numPackages; i++)
 		{
 			if(db.isManaged(mUpdatePackages[i].getQualifiedName()))
 			{
-				buttonEnabled = true;
-				listOfUpdateableApps.setItemChecked(i, true);
+				//buttonEnabled = true;
+				//listOfUpdateableApps.setItemChecked(i, true);
 				
 				if(!db.getUpdateStatus(mUpdatePackages[i].getQualifiedName()))
 				{
@@ -493,8 +509,10 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 				}
 			}
 		}
+		/*
+		*/
 
-		installButton.setEnabled(buttonEnabled);
+		//installButton.setEnabled(buttonEnabled);
 	}
 	
 	/**
@@ -515,78 +533,55 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		{
 			mManagedPackages[i] = (PackageDescription) oManagedPackages[i];
 		}
-		listOfManagedApps.setAdapter(new ArrayAdapter<PackageDescription>(this, R.layout.list_item, mManagedPackages));
+		listOfManagedApps.setAdapter(new ColorViewAdapter(this, R.layout.list_item, mManagedPackages));
+		//listOfManagedApps.setAdapter(new ColorViewAdapter(this, R.layout.list_item, R.id.managed_list, mManagedPackages));
+		//setListAdapter(new ArrayAdapter<String>(
+        // 	this,R.layout.list_black_text,R.id.list_content, listItems))
 	}
 	
-	/**
-	 * Called when an item in the list of updateable packages is clicked. It 
-	 * updates the package's status in the database to indicate that it should
-	 * not be updated if the Installer is called.
-	 * 
-	 * If the item was checked and is now being unchecked, it checks to see if
-	 * it exists in the list of new packages to be managed. If so, it removes
-	 * it from the list.
-	 * 
-	 * If the item was unchecked and is now being checked, it looks up whether
-	 * or not the item is already being managed and, if not, adds it to the
-	 * list of new packages.
-	 *  
-	 * @param view The CheckedTextView that was clicked in the list of 
-	 * 			   updateable packages.
-	 * 
-	 * @param position The position in the list of updateable packages that
-	 * 				   this item was for referencing the item in the 
-	 * 				   internal list of updates.
-	 */
-	private void listOfUpdateableAppsClick(CheckedTextView view, int position)
-	{
-		Database db = new Database(this);
-		db.changeUpdateStatus(mUpdatePackages[position].getQualifiedName(), !view.isChecked());
+
+	private class ColorViewAdapter extends ArrayAdapter<PackageDescription> {
+
+		public ColorViewAdapter(Context context, int textViewResourceId,
+				PackageDescription[] objects) {
+			//super(context, res1, textViewResourceId, objects);
+			super(context, textViewResourceId, objects);
+		}
+
 		
-		int numPackages = listOfUpdateableApps.getCount();
-		for(int i = 0; i < numPackages; i++)
-		{
-			installButton.setEnabled(false);
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {  
+			TextView view = (TextView) super.getView(position, convertView, parent);  
+			//TextView tv = super.getView(position, convertView, parent);
+
+			PackageDescription desc = getItem(position);
+			AppInfoModel appinfo = cache.get(desc.getQualifiedName());
+			int color;
 			
-			if(i == position)
-			{
-				if(!view.isChecked())
-				{
-					installButton.setEnabled(true);
-					break;
+			if (appinfo == null) {
+				color = Color.TRANSPARENT;
+			} else {
+				if (appinfo.installedVersion < appinfo.getVersion()) {
+					color = Color.YELLOW;
+				} else if (appinfo.installedVersion > appinfo.getVersion()) {
+					color = COLOR_ORANGE;
+				} else if (appinfo.installedVersion == appinfo.getVersion()) {
+					color = Color.GREEN;
+				} else {
+					color = Color.RED;
 				}
+			    view.setTextColor(Color.BLACK);
+			    view.setText(appinfo.toRichText());
 			}
-			else
-			{
-				if(((CheckedTextView) listOfUpdateableApps.getChildAt(i)).isChecked())
-				{
-					installButton.setEnabled(true);
-					break;
-				}
-			}	
-		}
+		    view.setBackgroundColor(color);
+		    
+            //TextView textView=(TextView) view.findViewById(android.R.id.text1);
+            //TextView textView=(TextView) view.findViewById(R.layout.list_item);
+            //textView.setTextColor(Color.BLUE);
+			return view;  
+		}		
 		
-		if(view.isChecked())
-		{
-			// If it was checked, we are unchecking it.
-			ListIterator<PackageDescription> li = newPackages.listIterator();
-			while(li.hasNext())
-			{
-				if(li.next().equals(mUpdatePackages[position]))
-				{
-					li.remove();
-				}
-			}
-		}
-		else
-		{
-			if(!db.isManaged(mUpdatePackages[position].getQualifiedName()))
-			{
-				newPackages.add(mUpdatePackages[position]);
-			}
-		}
 	}
-	
 	/**
 	 * Called when an item in the list of managed packages was clicked. If the
 	 * user was managed, it will inform them that they cannot remove a package
@@ -602,6 +597,16 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 	 */
 	private void listOfManagedAppsClick(TextView view, int position)
 	{
+		if (!cache.isEmpty()) {
+			AppInfoModel appinfo = cache.getItemAt(position);
+			if (appinfo != null && appinfo.lastChecked != null) {
+				Toast.makeText(this, appinfo.toRichTextLong(), Toast.LENGTH_LONG).show();			
+			}
+		}
+
+		// TODO display more details
+		
+		/*
 		// Check that they are not managed.
 		SharedPreferences preferences = getSharedPreferences(Database.PACKAGE_PREFERENCES, Context.MODE_PRIVATE);
 
@@ -626,5 +631,6 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		{
 			Toast.makeText(this, "You are a managed user and this package is already being managed for you. Therefore, you are not allowed to stop managing it.", Toast.LENGTH_SHORT).show();
 		}
+		*/
 	}
 }

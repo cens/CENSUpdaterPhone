@@ -7,14 +7,18 @@ import android.content.Context;
 import android.util.Log;
 
 /**
- * Encapsulate application manager/installer without user interaction.
- * To achieve that, we need to use superuser. 
- * @author peter
+ * Encapsulate package manager/installer command line.
+ * Invokes 'pm install -r' as su to install apps.
+ * Superuser has to be setup on the system. 
  *
  */
-public class ApplicationManager {
-	private static final String TAG = ApplicationManager.class.getName();
+public class PMCLI {
+	private static final String TAG = PMCLI.class.getName();
 
+	// The constants below are taken from package manager API but are not
+	// returned directly from pm command line. They have to be parsed
+	// out of the textual output from stderr.
+	
 	public final int INSTALL_REPLACE_EXISTING = 2;
 	
     /**
@@ -303,7 +307,7 @@ public class ApplicationManager {
 	 */
 	private Exec exec = new Exec();
 	
-	public ApplicationManager(Context context) throws SecurityException, NoSuchMethodException {
+	public PMCLI(Context context) throws SecurityException, NoSuchMethodException {
 	}
 	
 	public void setOnInstalledPackaged(OnInstalledPackage onInstalledPackaged) {

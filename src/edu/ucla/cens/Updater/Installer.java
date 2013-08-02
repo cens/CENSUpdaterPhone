@@ -28,7 +28,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import edu.ucla.cens.Updater.model.StatusModel;
 import edu.ucla.cens.Updater.utils.AppManager;
-import edu.ucla.cens.Updater.utils.ApplicationManager;
+import edu.ucla.cens.Updater.utils.PMCLI;
 import edu.ucla.cens.Updater.utils.OnInstalledPackage;
 import edu.ucla.cens.systemlog.Log;
 
@@ -329,15 +329,15 @@ public class Installer extends Activity
 				
 				startActivityForResult(installIntent, FINISHED_INSTALLING_PACKAGE);
 				*/
-				ApplicationManager am;
+				PMCLI am;
 				Log.d(TAG, "am starting istall: " + apkpath);
 				try {
-					am = new ApplicationManager(getApplicationContext());
+					am = new PMCLI(getApplicationContext());
 					am.setOnInstalledPackaged(new OnInstalledPackage() {
 						 
 					    public void packageInstalled(String packageName, int returnCode, String message) {
 					    	String msg;
-					        if (returnCode == ApplicationManager.INSTALL_SUCCEEDED) {
+					        if (returnCode == PMCLI.INSTALL_SUCCEEDED) {
 					        	msg = "Install succeeded for " + packageName + ": " + message;
 					            Log.d(TAG, msg);
 								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());

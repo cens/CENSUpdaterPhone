@@ -9,6 +9,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.InvalidParameterException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -34,8 +35,11 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.SQLException;
 import android.telephony.TelephonyManager;
 import edu.ucla.cens.Updater.PackageInformation.Action;
+import edu.ucla.cens.Updater.model.AppInfoModel;
 import edu.ucla.cens.Updater.model.SettingsModel;
 import edu.ucla.cens.Updater.model.StatusModel;
+import edu.ucla.cens.Updater.utils.AppInfoCache;
+import edu.ucla.cens.Updater.utils.AppManager;
 import edu.ucla.cens.Updater.utils.Constants;
 import edu.ucla.cens.systemlog.Log;
 
@@ -118,7 +122,7 @@ public class Updater
 				Intent intent = new Intent(mContext, Installer.class);
 				intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 				Log.d(TAG, "model .isAutoInstall(): " + model .isAutoInstall());
-				if (model .isAutoInstall()) {
+				if (model.isAutoInstall()) {
 					Log.i(TAG, "Updates were found. Started unassisted installation.");
 					//Intent intent = new Intent(mContext, Installer.class);
 					//intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -385,7 +389,8 @@ public class Updater
 		JSONObject jsonPackageInfo;
 		JSONArray packages = new JSONArray(info[1]);
 		String[] sPackages = new String[packages.length()];
-		PackageInformation packageInfo;
+		AppInfoModel packageInfo;
+		AppInfoCache cache = AppInfoCache.get();
 		
 		for(int i = 0; i < packages.length(); i++)
 		{
@@ -409,7 +414,7 @@ public class Updater
 					action = Action.UPDATE;
 				}
 				
-				packageInfo = new PackageInformation(jsonPackageInfo.getString("package"), 
+				packageInfo = new AppInfoModel(jsonPackageInfo.getString("package"), 
 													 jsonPackageInfo.getString("release"),
 													 jsonPackageInfo.getString("name"),
 													 jsonPackageInfo.getInt("ver"), 
@@ -418,6 +423,7 @@ public class Updater
 				result |= updatePackage(packageInfo);
 				
 				sPackages[i] = packageInfo.getQualifiedName();
+				cache.add(packageInfo);
 			}
 			catch(JSONException e)
 			{
@@ -489,7 +495,7 @@ public class Updater
 	 * @return Returns true if the package needs to be updated and the update
 	 * 		   information was successfully added to the database.
 	 */
-	private boolean updatePackage(PackageInformation packageInformation)
+	private boolean updatePackage(AppInfoModel packageInformation)
 	{
 		boolean result = false;
 		PackageManager packageManager = mContext.getPackageManager();
@@ -500,6 +506,7 @@ public class Updater
 			// Check to see if the package is currently installed. If not, we
 			// will effectively jump to the "NameNotFoundException".
 			PackageInfo packageInfo = packageManager.getPackageInfo(packageInformation.getQualifiedName(), 0);
+			//packageInfo;
 			
 			// The package is installed, and we are managing it.
 			if(mDatabase.isManaged(packageInformation.getQualifiedName()))
@@ -580,13 +587,17 @@ public class Updater
 	 * @return Returns true iff we added an update to the database and the
 	 * 		   database took it, false otherwise.
 	 */
-	private boolean checkInstalledVersionVsUpdate(PackageInfo packageInfo, PackageInformation packageInformation)
+	private boolean checkInstalledVersionVsUpdate(PackageInfo packageInfo, AppInfoModel packageInformation)
 	{
 		boolean result = false;
 		String msg;
+		packageInformation.installedVersion = packageInfo.versionCode;
+		packageInformation.lastChecked = new Date();
+		String checkedMessage = "";
 		if(packageInfo.versionCode < packageInformation.getVersion())
 		{
 			msg = "We received an update of the package, " + packageInformation.getQualifiedName() + ", so we will add it to the list of updates.";
+			checkedMessage = "Needs update";
 			// We are not up-to-date.
 			Log.i(TAG, msg);
 			result = addAsUpdate(packageInformation);
@@ -597,18 +608,22 @@ public class Updater
 			// For now, we are ignoring this case and assuming that
 			// the old version number is an error and not going to
 			// corrupt ourselves (further).
+			checkedMessage = "Ahead";			
 			msg = "We received an update of the package, " + packageInformation.getQualifiedName() + ", where the installed version is greater than this 'update'. Therefore, we will remove any pending updates for this package.";
 			Log.i(TAG, msg);
 			mDatabase.removeUpdate(packageInformation.getQualifiedName());
 		}
 		else
 		{
+			checkedMessage = "Up-to-date";			
 			// Everything is in sync.
 			msg = "We received an update of the package, " + packageInformation.getQualifiedName() + ", with the same version as the one we have now, so we will remove any pending, unnecessary updates.";
 			Log.i(TAG, msg);
 			mDatabase.removeUpdate(packageInformation.getQualifiedName());
 		}
 		StatusModel.get().addDownloadMessage(msg);
+		packageInformation.lastCheckedMessage = checkedMessage;
+		//packageInformation.lastInstallTime = packageInfo.;
 		return result;
 	}
 	
