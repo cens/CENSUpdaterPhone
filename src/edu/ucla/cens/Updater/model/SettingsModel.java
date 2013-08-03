@@ -32,12 +32,13 @@ public class SettingsModel {
 	static {
 		PREFS_DEFAULTS.put("updateFrequency", "10");
 		PREFS_DEFAULTS.put("autoUpdate", "true");
+		// app info json string
+		PREFS_DEFAULTS.put("appInfo", "{}");
 	}
 	
     
 	private SettingsModel() {
 		this.prefs = AppManager.get().getContext().getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);	
-
 	}
 	
 	/**

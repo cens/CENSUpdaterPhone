@@ -8,6 +8,7 @@ import android.text.Html;
 import android.text.Spanned;
 
 import edu.ucla.cens.Updater.PackageInformation;
+import edu.ucla.cens.Updater.utils.AppInfoCache;
 
 
 /**
@@ -17,7 +18,8 @@ import edu.ucla.cens.Updater.PackageInformation;
 public class AppInfoModel extends PackageInformation {
 
 	private static final SimpleDateFormat dateFormat = new SimpleDateFormat("M/d HH:mm", Locale.US);
-	private static final SimpleDateFormat dateFormatLonger = new SimpleDateFormat("yy/M/d HH:mm", Locale.US);
+	private static final SimpleDateFormat dateFormatLonger = new SimpleDateFormat("M/d/yy HH:mm", Locale.US);
+	private static final SimpleDateFormat dateFormatLongerPrecise = new SimpleDateFormat("M/d/yy HH:mm:ss", Locale.US);
 	
 	public String apkPathname;
 	public Date lastChecked;
@@ -53,8 +55,8 @@ public class AppInfoModel extends PackageInformation {
 	}
 	
 	
-	String template = "<span style=\"float: left;\"><em>%s</em>\t%s:  %s\t%s -> %s</span>";
-		//"<span style=\"float: right;\">\t%s -> %s</span>";
+	String template = 
+		"<em>%s</em>\t%s:  %s\t<small>%s -> %s<small>";
 	String template2 = "<br/><em>Last install:</em> %s";
 	
 	public Spanned toRichText() {
@@ -65,4 +67,22 @@ public class AppInfoModel extends PackageInformation {
 		}
 		return Html.fromHtml(source);
 	}
+
+	
+	String ltemplate = "<em>%s</em> %s<br/>Last checked: %s<br/>Check result: %s<br/>Installed version: %s<br/>Available version: %s";
+
+	public Spanned toRichTextLong() {
+		String source;
+		AppInfoCache cache = AppInfoCache.get();
+		if (cache.hasDataRetrievalError()) {
+			lastCheckedMessage = cache.getDataRetrievalError();
+		}
+		source = String.format(ltemplate, getDisplayName(), getQualifiedName() , dateFormatLongerPrecise.format(lastChecked), lastCheckedMessage,
+				installedVersion, getVersion());
+		if (lastInstallTime != null) {
+			source += String.format(template2, dateFormatLonger.format(lastInstallTime));
+		}
+		return Html.fromHtml(source);
+	}
 }
+

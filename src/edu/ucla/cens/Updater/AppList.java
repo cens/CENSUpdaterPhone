@@ -103,10 +103,11 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		public void run()
 		{
 			Updater updater = new Updater(mContext);
-			if(updater.doUpdate())
-			{
-				messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_LISTS));
-			}
+			updater.doUpdate();
+			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_LISTS));
+			//if(updater.doUpdate())
+			//{
+			//}
 		}
 	}
 	
@@ -133,9 +134,8 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		setContentView(R.layout.app_list);
 		AppManager.create(getApplicationContext());
         AppManager.get().setActivity(this);
-
 		Log.initialize(this, Database.LOGGER_APP_NAME);
-		
+		//cache.load();
 		mTabHost = getTabHost();
 	    
 	    //mTabHost.addTab(mTabHost.newTabSpec("updateableTabSpec").setIndicator("Updates").setContent(R.id.updateable_list_tab));
@@ -165,6 +165,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		listOfManagedApps.setOnItemClickListener(this);
 		
 		newPackages = new LinkedList<PackageDescription>();
+		
 	}
 	
 	/**
@@ -534,9 +535,6 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			mManagedPackages[i] = (PackageDescription) oManagedPackages[i];
 		}
 		listOfManagedApps.setAdapter(new ColorViewAdapter(this, R.layout.list_item, mManagedPackages));
-		//listOfManagedApps.setAdapter(new ColorViewAdapter(this, R.layout.list_item, R.id.managed_list, mManagedPackages));
-		//setListAdapter(new ArrayAdapter<String>(
-        // 	this,R.layout.list_black_text,R.id.list_content, listItems))
 	}
 	
 
@@ -552,8 +550,6 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {  
 			TextView view = (TextView) super.getView(position, convertView, parent);  
-			//TextView tv = super.getView(position, convertView, parent);
-
 			PackageDescription desc = getItem(position);
 			AppInfoModel appinfo = cache.get(desc.getQualifiedName());
 			int color;
@@ -561,7 +557,9 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			if (appinfo == null) {
 				color = Color.TRANSPARENT;
 			} else {
-				if (appinfo.installedVersion < appinfo.getVersion()) {
+				if (cache.hasDataRetrievalError()) {
+					color = Color.RED;
+				} else if (appinfo.installedVersion < appinfo.getVersion()) {
 					color = Color.YELLOW;
 				} else if (appinfo.installedVersion > appinfo.getVersion()) {
 					color = COLOR_ORANGE;

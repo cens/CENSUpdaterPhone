@@ -39,7 +39,6 @@ import edu.ucla.cens.Updater.model.AppInfoModel;
 import edu.ucla.cens.Updater.model.SettingsModel;
 import edu.ucla.cens.Updater.model.StatusModel;
 import edu.ucla.cens.Updater.utils.AppInfoCache;
-import edu.ucla.cens.Updater.utils.AppManager;
 import edu.ucla.cens.Updater.utils.Constants;
 import edu.ucla.cens.systemlog.Log;
 
@@ -71,6 +70,7 @@ public class Updater
 	private Context mContext;
 	private Database mDatabase;
 	private Proxy proxy;
+	private AppInfoCache cache = AppInfoCache.get();
 
 	private SettingsModel model = SettingsModel.get();
 	{
@@ -103,6 +103,10 @@ public class Updater
 	{
 		String msg = null;
 		Exception err = null;
+		boolean dataRetrievalError = true;
+		boolean rc = false;
+		cache.resetDataRetrievalError();
+		
 		try
 		{
 			Log.i(TAG, "Beginning update check.");
@@ -113,7 +117,7 @@ public class Updater
 			
 			if(parseResponse(response))
 			{
-				
+				dataRetrievalError = false;
 				NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
 				Notification notification = new Notification(R.drawable.u, NOTIFICATION_TICKER, System.currentTimeMillis());
 				notification.defaults |= Notification.DEFAULT_LIGHTS;
@@ -135,8 +139,7 @@ public class Updater
 					
 				}
 			}
-			
-			return true;
+			rc = true;
 		}
 		catch(MalformedURLException e)
 		{
@@ -157,13 +160,19 @@ public class Updater
 		{
 			msg = "Error parsing the JSON in the server response.";
 			err = e;
+		} finally {
+			if (err!=null) {
+				Log.e(TAG, msg, err);
+				StatusModel.get().addDownloadMessage(err.getMessage());
+				if (dataRetrievalError) {
+					cache.setDataRetrievalError(err.getMessage());
+				} else {
+					cache.resetDataRetrievalError();
+				}
+			} else {
+			}
 		}
-		if (err!=null) {
-			Log.e(TAG, msg, err);
-			StatusModel.get().addDownloadMessage(err.toString());
-		}
-		//doToastMessage(msg);
-		return false;
+		return rc;
 	}
 	
 	/**
@@ -329,9 +338,15 @@ public class Updater
 	 */
 	private boolean parseResponse(String response) throws InvalidParameterException, JSONException
 	{
+		//if (true) throw new InvalidParameterException("Error occured.");
+		
 		if(response == null)
 		{
 			throw new InvalidParameterException("HTTP response was null.");
+		}
+		if(response.length() == 0)
+		{
+			throw new InvalidParameterException("HTTP response was empty.");
 		}
 		
 		String[] info = response.split(",", 2);
@@ -390,7 +405,6 @@ public class Updater
 		JSONArray packages = new JSONArray(info[1]);
 		String[] sPackages = new String[packages.length()];
 		AppInfoModel packageInfo;
-		AppInfoCache cache = AppInfoCache.get();
 		
 		for(int i = 0; i < packages.length(); i++)
 		{

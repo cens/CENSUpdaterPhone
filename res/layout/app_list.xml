@@ -25,13 +25,6 @@
 				android:layout_height="fill_parent"
 				android:layout_weight="1.0">
 				<TextView
-					android:id="@+id/managed_list_header"
-					android:text="Managed Apps"
-					android:textSize="18sp" 
-					android:textStyle="bold"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"/>
-				<TextView
 					android:id="@+id/managed_list_empty_text"
 					android:text="\tNo apps being managed."
 					android:visibility="gone"
