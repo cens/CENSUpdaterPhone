@@ -339,6 +339,35 @@ public class PMCLI {
 			onInstalledPackage.packageInstalled(apkFile, rc, msg);
 		}
 	}
+
+    public static final int UNINSTALL_SUCCEEDED = 1;
+    public static final int UNINSTALL_FAILED = -1;
 	
+	public void uninstallPackageViaShell(String packageName) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		String cmd = "pm uninstall " + packageName;
+		String msg = "";
+		int rc = UNINSTALL_SUCCEEDED;
+
+		try {
+			msg = exec.execAsSu(cmd);
+			Log.i(TAG, "Succeeded to exec " + cmd + ": " + msg);
+			if (msg.indexOf("INSTALL_FAILED_ALREADY_EXISTS") >= 0) {
+				rc = INSTALL_FAILED_ALREADY_EXISTS;
+			} else if (msg.indexOf("INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES") >= 0) {
+				rc = INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES;
+			} else if (msg.indexOf("INSTALL_PARSE_FAILED") >= 0) {
+				rc = INSTALL_PARSE_FAILED_OTHER;
+			} else if (msg.indexOf("INSTALL_AILED") >= 0) {
+				rc = INSTALL_FAILED_OTHER;
+			} 
+		} catch (RuntimeException e) {
+			Log.e(TAG, "Failed to exec " + cmd + ": " + e);
+			msg = e.toString();
+			rc = UNINSTALL_FAILED;
+		}
+		if (onInstalledPackage != null) {
+			onInstalledPackage.packageInstalled(packageName, rc, msg);
+		}
+	}	
 	
 }

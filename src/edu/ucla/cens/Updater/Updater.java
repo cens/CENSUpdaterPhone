@@ -1,12 +1,9 @@
 package edu.ucla.cens.Updater;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.security.InvalidParameterException;
 import java.util.Date;
@@ -40,6 +37,8 @@ import edu.ucla.cens.Updater.model.SettingsModel;
 import edu.ucla.cens.Updater.model.StatusModel;
 import edu.ucla.cens.Updater.utils.AppInfoCache;
 import edu.ucla.cens.Updater.utils.Constants;
+import edu.ucla.cens.Updater.utils.RestClient;
+import edu.ucla.cens.Updater.utils.ServiceClientException;
 import edu.ucla.cens.systemlog.Log;
 
 /**
@@ -72,10 +71,40 @@ public class Updater
 	private Proxy proxy;
 	private AppInfoCache cache = AppInfoCache.get();
 
+	
 	private SettingsModel model = SettingsModel.get();
 	{
 		setupProxy();
 	}
+	
+	/**
+	 * Hostname verifier to be used with RestClient.
+	 */
+	private HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+	    @Override
+	    public boolean verify(String hostname, SSLSession session) {
+	        HostnameVerifier hv =
+	            HttpsURLConnection.getDefaultHostnameVerifier();
+	        if (hv.verify("coldtrace.org", session)) {
+	        	return true;
+	        }
+	        if (hv.verify("nexleaf.org", session)) {
+	        	return true;
+	        }
+	        if (hv.verify("updater.nexleaf.org", session)) {
+	        	return true;
+	        }
+	        return false;
+	    }
+	};
+	
+	RestClient client = new RestClient("https://updater.nexleaf.org");
+	
+	{ 
+		// init hostname verifier
+		client.setHostnameVerifier(hostnameVerifier);
+	}
+	
 	/**
 	 * Sets up this Updater.
 	 * 
@@ -140,6 +169,11 @@ public class Updater
 				}
 			}
 			rc = true;
+		}
+		catch(ServiceClientException e)
+		{
+			msg = e.toString();
+			err = e;
 		}
 		catch(MalformedURLException e)
 		{
@@ -273,49 +307,10 @@ public class Updater
 			TAG, 
 			"Sending request for updates with the following GET request: " + 
 				urlBuilder.toString());
-
-		HostnameVerifier hostnameVerifier = new HostnameVerifier() {
-		    @Override
-		    public boolean verify(String hostname, SSLSession session) {
-		        HostnameVerifier hv =
-		            HttpsURLConnection.getDefaultHostnameVerifier();
-		        if (hv.verify("coldtrace.org", session)) {
-		        	return true;
-		        }
-		        if (hv.verify("nexleaf.org", session)) {
-		        	return true;
-		        }
-		        if (hv.verify("updater.nexleaf.org", session)) {
-		        	return true;
-		        }
-		        return false;
-		    }
-		};
-
+		
 		// Build the URL object and connect to the server.
-		URL url = new URL(urlBuilder.toString());
-		HttpsURLConnection connection;
-    	if (Constants.USE_PROXY) {
-    		Log.d(TAG, "Using proxy: " + proxy);
-    		connection = (HttpsURLConnection) url.openConnection(proxy);
-    	} else {
-    		connection = (HttpsURLConnection) url.openConnection();
-    		
-    	}
-		connection.setHostnameVerifier(hostnameVerifier);
-		
-		// Read the data from the server.
-		String currLine;
-		StringBuilder stringBuilder = new StringBuilder();
-		BufferedReader buffReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-		while((currLine = buffReader.readLine()) != null)
-		{
-			stringBuilder.append(currLine);
-		}
-		buffReader.close();
-		
-		// Return the response.
-		return(stringBuilder.toString());
+		String res = client.getAsString(urlBuilder.toString());
+		return res;
 	}
 	
 	/**

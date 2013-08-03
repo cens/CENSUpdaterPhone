@@ -179,7 +179,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		SharedPreferences sharedPreferences = getSharedPreferences(Database.PACKAGE_PREFERENCES, Context.MODE_PRIVATE);
 		if(sharedPreferences.getBoolean(Database.PREFERENCES_SELF_UPDATE, true))
 		{
-			doUpdate();
+			//doUpdate();
 			
 			sharedPreferences.edit().putBoolean(Database.PREFERENCES_SELF_UPDATE, false).commit();
 		}

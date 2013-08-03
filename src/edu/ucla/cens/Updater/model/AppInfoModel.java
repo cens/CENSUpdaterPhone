@@ -60,7 +60,12 @@ public class AppInfoModel extends PackageInformation {
 	String template2 = "<br/><em>Last install:</em> %s";
 	
 	public Spanned toRichText() {
-		String source = String.format(template, getDisplayName(), dateFormat.format(lastChecked), lastCheckedMessage,
+		//String source;
+		String lastCheckedStr = null;
+		if (lastChecked != null) {
+			lastCheckedStr = dateFormat.format(lastChecked);
+		}
+		String source = String.format(template, getDisplayName(), lastCheckedStr, lastCheckedMessage,
 				installedVersion, getVersion());
 		if (lastInstallTime != null) {
 			source += String.format(template2, dateFormatLonger.format(lastInstallTime));

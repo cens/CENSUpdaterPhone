@@ -14,7 +14,8 @@ public class Constants {
 	/**
 	 * If USE_PROXY is enabled, used to proxy host.
 	 */
-	public static final String PROXY_HOST = "192.168.2.110";
+	//public static final String PROXY_HOST = "192.168.2.110";
+	public static final String PROXY_HOST = "192.168.1.83";
 	/**
 	 * If USE_PROXY is enabled, used to proxy port.
 	 */
