@@ -1,6 +1,7 @@
 package edu.ucla.cens.Updater.utils;
 
 
+import edu.ucla.cens.Updater.AppList;
 import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
@@ -78,6 +79,13 @@ public class AppManager {
 					doToastMessage(message);
 				}
 		});
+    }
+    
+    public void nototifyMainActivity() {
+    	if (activity != null) {
+    		((AppList) activity).notifyDataChanged();
+    	}
+    	
     }
     
     // ***************** Domain specific public functions ***************

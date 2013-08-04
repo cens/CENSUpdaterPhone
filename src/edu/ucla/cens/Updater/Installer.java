@@ -27,6 +27,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import edu.ucla.cens.Updater.PackageInformation.Action;
 import edu.ucla.cens.Updater.model.StatusModel;
+import edu.ucla.cens.Updater.utils.AppInfoCache;
 import edu.ucla.cens.Updater.utils.AppManager;
 import edu.ucla.cens.Updater.utils.PMCLI;
 import edu.ucla.cens.Updater.utils.OnInstalledPackage;
@@ -665,6 +666,9 @@ public class Installer extends Activity
 		if(currPackageIndex >= packagesToBeUpdated.length)
 		{
 			Log.i(TAG, "Done updating all packages.");
+			// refresh app info cache 
+			AppInfoCache.get().refresh();
+			AppManager.get().nototifyMainActivity();
 			finish();
 			return;
 		}

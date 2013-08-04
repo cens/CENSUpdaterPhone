@@ -7,6 +7,9 @@ import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.util.Log;
 import edu.ucla.cens.Updater.model.AppInfoModel;
 import edu.ucla.cens.Updater.model.SettingsModel;
@@ -73,6 +76,26 @@ public class AppInfoCache extends HashMap<String, AppInfoModel> {
 		return dataRetrievalError != null;
 	}
 
+	/**
+	 * Refresh installed app info in the cached instances
+	 */
+	public void refresh() {
+		
+		for (String packageName: idList) {
+			AppInfoModel info = get(packageName);
+			try {
+				// Get the package's information. If this doesn't throw an
+				// exception, then the package must be installed.
+				PackageManager packageManager = AppManager.get().getContext().getPackageManager();
+				PackageInfo appinfo = packageManager.getPackageInfo(packageName, 0);
+				info.installedVersion = appinfo.versionCode;
+			} catch(NameNotFoundException e) {
+				info.installedVersion = 0;
+			}						
+			
+		}
+		
+	}
 	/**
 	 * Load cache from persistent store
 	 */

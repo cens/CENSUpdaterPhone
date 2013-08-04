@@ -1,12 +1,9 @@
 package edu.ucla.cens.Updater;
 
 import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.NotificationManager;
 import android.app.TabActivity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -122,6 +119,8 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			}
 		}
 	};
+
+	private ColorViewAdapter viewAdapter;
 	
 	/**
 	 * Sets up the UI elements then does an update. An update includes
@@ -534,7 +533,8 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		{
 			mManagedPackages[i] = (PackageDescription) oManagedPackages[i];
 		}
-		listOfManagedApps.setAdapter(new ColorViewAdapter(this, R.layout.list_item, mManagedPackages));
+		viewAdapter = new ColorViewAdapter(this, R.layout.list_item, mManagedPackages);
+		listOfManagedApps.setAdapter(viewAdapter);
 	}
 	
 
@@ -630,5 +630,9 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			Toast.makeText(this, "You are a managed user and this package is already being managed for you. Therefore, you are not allowed to stop managing it.", Toast.LENGTH_SHORT).show();
 		}
 		*/
+	}
+
+	public void notifyDataChanged() {
+		viewAdapter.notifyDataSetChanged();
 	}
 }

@@ -30,7 +30,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.SQLException;
-import android.telephony.TelephonyManager;
 import edu.ucla.cens.Updater.PackageInformation.Action;
 import edu.ucla.cens.Updater.model.AppInfoModel;
 import edu.ucla.cens.Updater.model.SettingsModel;
@@ -39,6 +38,7 @@ import edu.ucla.cens.Updater.utils.AppInfoCache;
 import edu.ucla.cens.Updater.utils.Constants;
 import edu.ucla.cens.Updater.utils.RestClient;
 import edu.ucla.cens.Updater.utils.ServiceClientException;
+import edu.ucla.cens.Updater.utils.Utils;
 import edu.ucla.cens.systemlog.Log;
 
 /**
@@ -227,11 +227,7 @@ public class Updater
 		StringBuilder urlBuilder = new StringBuilder(SERVER_URL);
 
 		// Get the device's identifier and add it to the URL.
-		String identifier = 
-			((TelephonyManager) 
-				mContext
-					.getSystemService(Context.TELEPHONY_SERVICE))
-					.getDeviceId();
+		String identifier = Utils.getDeviceId();
 		urlBuilder.append(identifier);
 		
 		// Begin building the parameter map.
