@@ -29,6 +29,7 @@ Running the build and sign for all projects:
 
     # note: replace -v xyz etc. with the correct version
     # assuming TempTrace dosign tool resides in a TempTrace directory parallel to this projec:
+    ant release
     ../TempTrace/dosign.sh -p updater -v 119 -s -u
 
 
