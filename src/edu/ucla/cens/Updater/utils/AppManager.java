@@ -59,7 +59,6 @@ public class AppManager {
         return context;
     }
 
-	
     public void doToastMessage(String message) {
     	Log.d(TAG, message);
     	
@@ -74,11 +73,14 @@ public class AppManager {
 	
 
     public void doToastMessageAsync(final String message) {
-    	activity.runOnUiThread( new Runnable() {
+    	// activity may be null if called by non-ui receiver thread
+    	if (activity != null) {
+        	activity.runOnUiThread( new Runnable() {
 				public void run() {
 					doToastMessage(message);
 				}
-		});
+        	});
+    	}
     }
     
     public void nototifyMainActivity() {
@@ -89,7 +91,6 @@ public class AppManager {
     }
     
     // ***************** Domain specific public functions ***************
-    
     
 
 }
