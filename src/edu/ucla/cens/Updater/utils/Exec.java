@@ -1,8 +1,10 @@
 package edu.ucla.cens.Updater.utils;
 
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import android.util.Log;
 
@@ -15,7 +17,7 @@ public class Exec {
     /**
      * Buffer length for reading command output 
      */
-	private static final int BUFF_LEN = 1024;
+	//private static final int BUFF_LEN = 1024;
 	
 	/**
 	 * Shell to execute. Bu default, it's su (superuser), but could
@@ -52,39 +54,49 @@ public class Exec {
         String msg = null;
         String errorOut = "";
         boolean errorSeen = true;
+        boolean successOrFailSeen = false;
         try {
             // Perform su to get root privilege
-            Process p = Runtime.getRuntime().exec(shell);
+            //Process p = Runtime.getRuntime().exec(shell);
             // if using sh instead of su, we'll get this message:
             //   reboot operation not permitted.
             //Process p = Runtime.getRuntime().exec("sh");
+            Process p = new ProcessBuilder(shell).redirectErrorStream(true).start();
             
-            
-            InputStream stdin = p.getInputStream();
-            InputStream stderr = p.getErrorStream();
+            //InputStream stdin = p.getInputStream();
+            //InputStream stderr = p.getErrorStream();
+            BufferedReader stdin = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
             // Write command
+            Log.d(TAG, "Running: " + command);
             DataOutputStream os = new DataOutputStream(p.getOutputStream());
             os.writeBytes(command + "\n");
             // Close the terminal
-            os.writeBytes("exit\n");
-            os.flush();
 
-            int read;
+            //int read;
             StringBuffer sb = new StringBuffer();
             //read output
-            byte[] buffer = new byte[BUFF_LEN];
-            while(true){
-                read = stdin.read(buffer);
-                if(read<0){
-                    //we have read everything
-                    break;
-                }
-                sb.append(new String(buffer, 0, read));
+            //byte[] buffer = new byte[BUFF_LEN];
+            String buffer;
+            while((buffer = stdin.readLine()) != null) {
+            	//String outputstr = new String(buffer, 0, read);
+            	String outputstr = buffer;
+            	//Log.d(TAG, "read " + Integer.toString(read) + " " + outputstr);
+            	Log.d(TAG, "read " + Integer.toString(outputstr.length()) + " " + outputstr);
+            	sb.append(outputstr);
+            	if (outputstr.contains("Success") || outputstr.contains("Fail")) {
+                    os.writeBytes("exit\n");	
+            	    os.writeBytes("exit\n");	
+                    os.flush();
+                    os.close();
+                    successOrFailSeen = true;
+            		break;
+            	}
             }            
             String stdOut = sb.toString();
             Log.d(TAG, "execAsSu stdout: " + stdOut);
             
+            /*
             // read stderr
             sb = new StringBuffer();
             while(true){
@@ -97,42 +109,53 @@ public class Exec {
             }            
             errorOut = sb.toString();
             Log.d(TAG, "execAsSu stderr: " + errorOut);
+            */
+            
             try {
-            	p.waitFor();
-                if (p.exitValue() == 0) {
-                	msg = "Executing '" + command + "' as root succeeded.\nexit value="+ p.exitValue();
-                	if (!errorOut.equals("")) {
-                    	msg += "\nError output: " + errorOut;
-                	}
-                	if (!stdOut.equals("")) {
-                    	msg += "\nOutput: " + stdOut;
-                	}
-                	errorSeen = false;
-                } else if (p.exitValue() == 1 && (command.startsWith("ls") || command.startsWith("/system/bin/ls"))) {
-                	msg = "Executing '" + command + "' as root succeeded, but the file was not found.\nexit value="+ p.exitValue();
-                	if (!errorOut.equals("")) {
-                    	msg += "\nError output: " + errorOut;
-                	}
-                	if (!stdOut.equals("")) {
-                    	msg += "\nOutput: " + stdOut;
-                	}
-                } else if (p.exitValue() == 127) {
-                	msg = "Executing '" + command + "' as root failed (command not found).\nexit value="+ p.exitValue();
-                	if (!errorOut.equals("")) {
-                    	msg += "\nError output: " + errorOut;
-                	}
-                	if (!stdOut.equals("")) {
-                    	msg += "\nOutput: " + stdOut;
-                	}
-                } else {
-                	msg = "Executing '" + command + "' as root failed.\nexit value=" + p.exitValue();
-                	if (!errorOut.equals("")) {
-                    	msg += "\nError output: " + errorOut;
-                	}
-                	if (!stdOut.equals("")) {
-                    	msg += "\nOutput: " + stdOut;
-                	}
-                }
+            	//p.waitFor();
+            	if (successOrFailSeen) {
+            		p.destroy();
+            		msg = stdOut;
+            		if (msg.contains("Success")) {
+            			errorSeen = false;
+            		}
+            	} else {
+            		p.waitFor();
+	                if (p.exitValue() == 0) {
+	                	msg = "Executing '" + command + "' as root succeeded.\nexit value="+ p.exitValue();
+	                	if (!errorOut.equals("")) {
+	                    	msg += "\nError output: " + errorOut;
+	                	}
+	                	if (!stdOut.equals("")) {
+	                    	msg += "\nOutput: " + stdOut;
+	                	}
+	                	errorSeen = false;
+	                } else if (p.exitValue() == 1 && (command.startsWith("ls") || command.startsWith("/system/bin/ls"))) {
+	                	msg = "Executing '" + command + "' as root succeeded, but the file was not found.\nexit value="+ p.exitValue();
+	                	if (!errorOut.equals("")) {
+	                    	msg += "\nError output: " + errorOut;
+	                	}
+	                	if (!stdOut.equals("")) {
+	                    	msg += "\nOutput: " + stdOut;
+	                	}
+	                } else if (p.exitValue() == 127) {
+	                	msg = "Executing '" + command + "' as root failed (command not found).\nexit value="+ p.exitValue();
+	                	if (!errorOut.equals("")) {
+	                    	msg += "\nError output: " + errorOut;
+	                	}
+	                	if (!stdOut.equals("")) {
+	                    	msg += "\nOutput: " + stdOut;
+	                	}
+	                } else {
+	                	msg = "Executing '" + command + "' as root failed.\nexit value=" + p.exitValue();
+	                	if (!errorOut.equals("")) {
+	                    	msg += "\nError output: " + errorOut;
+	                	}
+	                	if (!stdOut.equals("")) {
+	                    	msg += "\nOutput: " + stdOut;
+	                	}
+	                }
+            	}	
             } catch (InterruptedException e) {
             	msg = "Encountered InterruptedException while executing '" + command + "' as root.";
             }
