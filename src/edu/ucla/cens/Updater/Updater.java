@@ -64,7 +64,7 @@ public class Updater
 	private static final String TAG = "CENS.Updater";
 	
 	private static final String SERVER_URL = 
-			"https://updater.nexleaf.org/updater/uapp/get/";
+			"http://updater.nexleaf.org/updater/uapp/get/";
 	
 	private static final String NOTIFICATION_HEADER = "CENS Update Manager";
 	private static final String NOTIFICATION_MESSAGE = "Tap here to review updates.";
@@ -108,7 +108,7 @@ public class Updater
 	    }
 	};
 	
-	RestClient client = new RestClient("https://updater.nexleaf.org");
+	RestClient client = new RestClient("http://updater.nexleaf.org");
 	
 	{
 		// init hostname verifier

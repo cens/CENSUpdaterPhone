@@ -3,7 +3,7 @@ package edu.ucla.cens.Updater.utils;
 public class Constants {
 
 	//static final String SERVER_URL = "http://apps.ohmage.org/uproject/uapp/get/";
-	static final String SERVER_URL = "https://updater.nexleaf.org/updater/uapp/get/";
+	static final String SERVER_URL = "http://updater.nexleaf.org/updater/uapp/get/";
 	/**
 	 Set to true to use a proxy - useful if you need
 	  to trace HTTP traffic using a proxy.
