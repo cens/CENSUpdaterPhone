@@ -99,9 +99,24 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 		@Override
 		public void run()
 		{
-			Updater updater = new Updater(mContext);
-			updater.doUpdate();
-			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_LISTS));
+			int attempts = 5;
+			while (attempts > 0) {
+				Log.d(TAG, "Update checkin attempt countdown: " + Integer.toString(attempts));
+				Updater updater = new Updater(mContext);
+				if (updater.doUpdate()) {
+					attempts = 0;
+				} else {
+					try {
+						Log.d(TAG, "Checking failed, sleeping 5 seconds and trying again.");
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					Log.d(TAG, "Done sleeping");
+				}
+				messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_LISTS));
+				attempts = attempts - 1;
+			}
 			//if(updater.doUpdate())
 			//{
 			//}

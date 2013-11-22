@@ -30,7 +30,7 @@ public class SettingsModel {
 	private static final Map<String, String> PREFS_DEFAULTS = new HashMap<String, String>();
 	
 	static {
-		PREFS_DEFAULTS.put("updateFrequency", "10");
+		PREFS_DEFAULTS.put("updateFrequency", "360");
 		PREFS_DEFAULTS.put("autoUpdate", "true");
 		// app info json string
 		PREFS_DEFAULTS.put("appInfo", "{}");

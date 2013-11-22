@@ -81,9 +81,25 @@ public class UpdateReceiver extends BroadcastReceiver
 		try {
 			mWakeLock = ((PowerManager) mContext.getSystemService(Context.POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
 			mWakeLock.acquire();
-			Log.i(TAG, "Aquired wake lock.");
-			Updater updater = new Updater(mContext);
-			updater.doUpdate();
+			//Log.i(TAG, "Aquired wake lock.");
+			int attempts = 5;
+			while (attempts > 0) {
+				Log.d(TAG, "Update checking attempt countdown: " + Integer.toString(attempts));
+				Updater updater = new Updater(mContext);
+				if (updater.doUpdate()) {
+					attempts = 0;
+				} else {
+					Log.d(TAG, "Checking failed, sleeping 5 seconds and trying again.");
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						Log.e(TAG, "InterruptedException on Thread.sleep()", e);
+						e.printStackTrace();
+					}
+					Log.d(TAG, "Done sleeping");
+				}
+				attempts = attempts - 1;
+			}
 		}
 		catch(NullPointerException e) {
 			Log.e(TAG, "Failed to acquire wake lock, or updater failed: ", e);

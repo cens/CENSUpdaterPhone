@@ -1,6 +1,9 @@
 package edu.ucla.cens.Updater;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
@@ -30,6 +33,8 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.database.SQLException;
+import android.net.ConnectivityManager;
+import android.os.IBinder;
 import edu.ucla.cens.Updater.PackageInformation.Action;
 import edu.ucla.cens.Updater.model.AppInfoModel;
 import edu.ucla.cens.Updater.model.SettingsModel;
@@ -40,6 +45,11 @@ import edu.ucla.cens.Updater.utils.RestClient;
 import edu.ucla.cens.Updater.utils.ServiceClientException;
 import edu.ucla.cens.Updater.utils.Utils;
 import edu.ucla.cens.systemlog.Log;
+
+import android.provider.Settings;
+import android.telephony.TelephonyManager;
+
+
 
 /**
  * Responsible for querying the server for updates based on what we are
@@ -100,7 +110,7 @@ public class Updater
 	
 	RestClient client = new RestClient("https://updater.nexleaf.org");
 	
-	{ 
+	{
 		// init hostname verifier
 		client.setHostnameVerifier(hostnameVerifier);
 	}
@@ -116,6 +126,107 @@ public class Updater
 		
 		mContext = context;
 		mDatabase = new Database(context);
+		
+		/**
+		 * This is specific to android 2.2 and 2.3 ... 
+		 * We are trying to prevent the 'power saving mode' on some Huawei
+		 * phones from affecting our data upload. The power saving mode 
+		 * shuts off background data, which breaks everything.
+		 * 
+		 * The power saving mode also shuts off 'always on mobile', but
+		 * that does not seem to affect things if we retry, which we do. 
+		 * I have been unable to find a setting for 'always on mobile'.
+		 * 
+		 * The app must be installed in /system/app/ for this to work since it is 
+		 * setting secure setting. Note that any updates to the app put into 
+		 * /data/app will still work as long as the permissions in the manifest
+		 * match.
+		 * 
+		 * This runs every time just to make sure.
+		 **/
+		try {
+			Log.d(TAG, "Trying to force background data on !");
+			boolean res = Settings.Secure.putInt(context.getContentResolver(), Settings.Secure.BACKGROUND_DATA, 1);
+			Log.d(TAG, "Background data force set was " + Boolean.toString(res));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+		/**
+		 * Below is code for both Android 2.2 and 2.3... the second chunk
+		 * works on the 2.3 Huawei phones. Not sure where the first chunk 
+		 * will work.
+		 * 
+		 * This code tries to set the 'Data Enabled' option. This is typically
+		 * not touched by the huawei low power settings, but in case it is ever
+		 * by accidentally turned off, we can try to force it on. 
+		 * 
+		 */
+		
+		/*
+		try {	
+			Method dataConnSwitchmethod;
+			Class telephonyManagerClass;
+			Object ITelephonyStub;
+			Class ITelephonyClass;
+
+			boolean isEnabled = false;
+			
+			TelephonyManager telephonyManager = (TelephonyManager) context
+	            .getSystemService(Context.TELEPHONY_SERVICE);
+
+			if(telephonyManager.getDataState() == TelephonyManager.DATA_CONNECTED){
+				isEnabled = true;
+			} else {
+				isEnabled = false;  
+			}
+			Log.d(TAG, "Data state: " + Boolean.toString(isEnabled));
+
+			telephonyManagerClass = Class.forName(telephonyManager.getClass().getName());
+			Method getITelephonyMethod = telephonyManagerClass.getDeclaredMethod("getITelephony");
+			getITelephonyMethod.setAccessible(true);
+			ITelephonyStub = getITelephonyMethod.invoke(telephonyManager);
+			ITelephonyClass = Class.forName(ITelephonyStub.getClass().getName());
+
+			//if (isEnabled) {
+			//	dataConnSwitchmethod = ITelephonyClass
+			//			.getDeclaredMethod("disableDataConnectivity");
+			//} else {
+			dataConnSwitchmethod = ITelephonyClass.getDeclaredMethod("enableDataConnectivity");   
+			//}
+			dataConnSwitchmethod.setAccessible(true);
+			dataConnSwitchmethod.invoke(ITelephonyStub);
+
+			if(telephonyManager.getDataState() == TelephonyManager.DATA_CONNECTED){
+				isEnabled = true;
+			} else {
+				isEnabled = false;  
+			}
+			Log.d(TAG, "Data state: " + Boolean.toString(isEnabled));
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		*/
+		
+		try {
+			
+			final ConnectivityManager conman = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+			final Class conmanClass = Class.forName(conman.getClass().getName());
+			final Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
+			iConnectivityManagerField.setAccessible(true);
+			final Object iConnectivityManager = iConnectivityManagerField.get(conman);
+			final Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
+			final Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
+			setMobileDataEnabledMethod.setAccessible(true);
+				setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+			
+
+
 		
 		Log.initialize(context, Database.LOGGER_APP_NAME);
 	}

@@ -78,9 +78,6 @@ public class RestClient {
 		});		
 		
 	}
-	
-	//HostnameVerifier hostnameVerifier = org.apache.http.conn.ssl.SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
-
     
 	public String getBaseUrl() {
 		return baseUrl;
@@ -272,6 +269,7 @@ public class RestClient {
         try {
         	response = httpclient.execute(request);
         } catch(Exception e) {
+        	e.printStackTrace();
         	throw new ServiceClientException("Problem executing GET request", e);
         }
         StatusLine status = response.getStatusLine();
@@ -289,6 +287,7 @@ public class RestClient {
 	                result = convertStreamToString(instream);
                     Log.d(TAG, "result: " + result);
                 } catch(Exception ex) {
+                	ex.printStackTrace();
                 	throw new ServiceClientException(ex);
                 }
             }            	
