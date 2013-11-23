@@ -263,7 +263,8 @@ public class RestClient {
 	private String processRequestAsString(HttpRequestBase request) 
 	  throws ServiceClientException {
 		
-		DefaultHttpClient httpclient = new DefaultHttpClient(mgr, client.getParams());
+		//DefaultHttpClient httpclient = new DefaultHttpClient(mgr, client.getParams());
+		DefaultHttpClient httpclient = new DefaultHttpClient(client.getParams());
         HttpResponse response = null;
         String result = null;
         try {
