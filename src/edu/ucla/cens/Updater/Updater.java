@@ -32,8 +32,12 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.database.SQLException;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
+import android.net.Uri;
 import android.os.IBinder;
 import edu.ucla.cens.Updater.PackageInformation.Action;
 import edu.ucla.cens.Updater.model.AppInfoModel;
@@ -224,8 +228,86 @@ public class Updater
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-			
 
+
+    try {
+
+      //path to APN table
+      final Uri APN_TABLE_URI = Uri.parse("content://telephony/carriers");
+      
+      //path to preffered APNs
+      final Uri PREFERRED_APN_URI = Uri.parse("content://telephony/carriers/preferapn");
+      
+      //receiving cursor to preffered APN table
+      //Cursor c = context.getContentResolver().query(APN_TABLE_URI, null, null, null, null);
+      String[] projection = new String[]{"_id", "name", "type"};
+      Cursor c = context.getContentResolver().query(PREFERRED_APN_URI, null, null, null, null);
+
+
+      int count = c.getCount();
+
+      Log.d(TAG, "FOUND APNS: " + Integer.toString(count));
+
+      if (count > 0) {
+      
+        //moving the cursor to beggining of the table
+        c.moveToFirst();
+        int keyidx = c.getColumnIndex("_id");
+        int nameidx = c.getColumnIndex("name");
+        int apnidx = c.getColumnIndex("apn");
+        int typeidx = c.getColumnIndex("type");
+        int key = c.getInt(keyidx);
+        String apn = c.getString(apnidx);
+        String name = c.getString(nameidx);
+        String type = c.getString(typeidx);
+
+        Log.d(TAG, "CURRENT APN: Key: " + Integer.toString(key) + " name: " + name + " type: " + type + " apn: " + apn);
+
+        if (name.contains("CMNET") || name.contains("CMWEB") || apn.contains("cmnet") || apn.contains("cmweb")) {
+          Log.d(TAG, "Found rouge APN!");
+          ContentValues values = new ContentValues();
+          values.put("name", name);
+          values.put("apn", apn);
+          String newtype = type.replace("default,", "").replace("default", "").replace(",,",",");
+          values.put("type", newtype);
+          Log.d(TAG, "Will replace type with: " + newtype);
+
+          Uri updateuri = ContentUris.withAppendedId(APN_TABLE_URI, key);
+          long res = context.getContentResolver().update(updateuri, values, null, null);
+          Log.d(TAG, "Updated rows: " + Long.toString(res));
+
+        }
+        
+        /*
+        for (int i = 0; i < count; i++) {
+          int ccount = c.getColumnCount();
+          Log.d(TAG, "WORKING ON NEXT APN ENTRY " + Integer.toString(i) + " of " + Integer.toString(count));
+          for (int idx = 0; idx < ccount; idx++) {
+            Log.d(TAG, "Col: " + c.getColumnName(idx) + " val: " + c.getString(idx));
+          }
+          c.moveToNext();
+        }
+        */
+
+      }
+      
+      //now the cursor points to the first preffered APN and we can get some
+      //information about it
+      //for example first preffered APN id    
+      //int index = c.getColumnIndex("_id");    //getting index of required column
+      //Short id = c.getShort(index);           //getting APN's id from
+      
+      //we can get APN name by the same way
+      //index = c.getColumnIndex("name");
+      //String name = c.getString(index); 
+      
+      //and any other APN properties: numeric, mcc, mnc, apn, user, server,
+      //password, proxy, port, mmsproxy, mmsport, mmsc, type, current
+      
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    
 
 		
 		Log.initialize(context, Database.LOGGER_APP_NAME);
