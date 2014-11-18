@@ -13,8 +13,8 @@
 		android:visible="true"/>
 		
 	<item 
-	    android:id="@+id/menu_register"
-	    android:title="Register"
-	    android:icon="@android:drawable/ic_menu_send"
+	    android:id="@+id/menu_clear_apps"
+	    android:title="Clear System Apps"
+	    android:icon="@android:drawable/ic_menu_preferences"
 	    android:visible="true"/>
 </menu>

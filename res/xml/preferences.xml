@@ -12,7 +12,7 @@
                 android:key="updateFrequency"
                 android:title="Update Frequency"
                 android:summary="Frequency in minutes at which update availability is checked."
-                android:defaultValue="10"                
+                android:defaultValue="600"                
                 android:numeric="integer"/>
             <CheckBoxPreference
                 android:key="autoUpdate"

@@ -31,6 +31,7 @@ import android.widget.Toast;
 import edu.ucla.cens.Updater.model.AppInfoModel;
 import edu.ucla.cens.Updater.utils.AppInfoCache;
 import edu.ucla.cens.Updater.utils.AppManager;
+import edu.ucla.cens.Updater.utils.SysappClear;
 import edu.ucla.cens.systemlog.Log;
 
 /**
@@ -321,10 +322,79 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			Log.d(TAG, "starting CustomPreferenceActivity");
 			startActivity(new Intent(this, CustomPreferenceActivity.class));
 			return true;
+
+
+      /**
+       *
+       */
+    case R.id.menu_clear_apps:
+      Log.d(TAG, "Starting system app clear");
+			final Dialog dialog = new Dialog(this);
+			dialog.setContentView(R.layout.clearapp_popup);
+			dialog.setTitle("Clear System Apps");
 			
+			WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+			params.width = WindowManager.LayoutParams.FILL_PARENT;
+			dialog.getWindow().setAttributes(params);
+			
+			final Context applicationContext = getApplicationContext();
+      
+      			// Setup the register button.
+			((Button) dialog.findViewById(R.id.clearappsConfirmButton))
+				.setOnClickListener(
+						new OnClickListener() {
+              /**
+							 * Attempt to remove apps
+							 */
+      			@Override
+							public void onClick(View v) {
+								try {
+									// Get the entered values.
+									SysappClear sac = new SysappClear();
+									sac.getSystemMount();
+									
+								}
+								catch(Exception e) {
+									Log.e(
+											TAG, 
+											"Exception while clearning apps.", 
+											e);
+									
+									Toast.makeText(
+											applicationContext, 
+											"ClearApps failed.", 
+											Toast.LENGTH_LONG)
+										.show();
+								}
+								
+								dialog.dismiss();
+							}
+						}
+				);
+			
+			// Setup the cancel button.
+			((Button) dialog.findViewById(R.id.clearappsCancelButton))
+				.setOnClickListener(
+						new OnClickListener() {
+      		/**
+							 * Close the dialog box.
+							 */
+							@Override
+							public void onClick(View v) {
+								dialog.dismiss();
+							}
+				
+						}
+				);
+			
+			dialog.show();
+			return true;
+
+      
 		/**
 		 * Register the device with an asset tag.
 		 */
+    /*
 		case R.id.menu_register:
 			final Dialog dialog = new Dialog(this);
 			dialog.setContentView(R.layout.register_popup);
@@ -358,10 +428,10 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			((Button) dialog.findViewById(R.id.registerConfirmButton))
 				.setOnClickListener(
 						new OnClickListener() {
-							/**
+    */			/**
 							 * Attempt to register and then close the dialog.
 							 */
-							@Override
+      /*			@Override
 							public void onClick(View v) {
 								try {
 									// Get the entered values.
@@ -424,10 +494,10 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			((Button) dialog.findViewById(R.id.registerCancelButton))
 				.setOnClickListener(
 						new OnClickListener() {
-							/**
+      */		/**
 							 * Close the dialog box.
 							 */
-							@Override
+			/*				@Override
 							public void onClick(View v) {
 								dialog.dismiss();
 							}
@@ -437,7 +507,7 @@ public class AppList extends TabActivity implements View.OnClickListener, Dialog
 			
 			dialog.show();
 			return true;
-		
+     */
 		/**
 		 * Otherwise, pass the call to the parent.
 		 */
