@@ -22,6 +22,7 @@ import javax.net.ssl.SSLSession;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.nexleaf.shared.SharedUtils;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -328,6 +329,11 @@ public class Updater
 		boolean dataRetrievalError = true;
 		boolean rc = false;
 		cache.resetDataRetrievalError();
+		Log.d(TAG, "doUpdate: requesting radio on");
+		boolean alreadyOn = SharedUtils.requestRadioOn();
+		if (!alreadyOn) {
+		    SharedUtils.waitForRadioOn();
+		}
 		
 		try
 		{
