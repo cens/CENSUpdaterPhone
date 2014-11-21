@@ -4,6 +4,7 @@ import edu.ucla.cens.Updater.utils.AppManager;
 import android.content.Context;
 import android.content.Intent;
 import android.provider.Settings;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 /**
@@ -25,24 +26,29 @@ public class SharedUtils {
     }
 
     /**
-     * Queries current airplane mode.
-     * @return true if airplane mode is on, false otherwise
+     * Queries current radio mode.
+     * @return true if radio is on, false otherwise
      */
-    public static boolean isAirplaneModeOn() {
-        return Settings.System.getInt(context.getContentResolver
-                                (),Settings.System.AIRPLANE_MODE_ON, 0) != 0;
+    public static boolean isRadioOn() {
+        TelephonyManager telMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        int networkType = telMgr.getNetworkType();
+        // 0: NETWORK_TYPE_UNKNOWN
+        // 
+        // 1: GPRS
+        // 2: int  NETWORK_TYPE_EDGE    Current network is EDGE
+        boolean rc = (networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN);
+        Log.d(TAG, "isRadioOn: networkType="+networkType+"; returning " + rc);
+        return rc;
     }
-    
+        
     /**
      * Sends a request for radio to be turned on.
      * The request is sent even if the state already seems to be as requested.
-     * @return true if radio seems to be already in the requested state, false
+     * @return true if radio appears to be already in the requested state, false
      *   otherwise
      */
     public static boolean requestRadioOn() {
-        // TODO: instead of false, query radio on via ConnectivityManager or 
-        //   TelephoneManager
-        boolean currentState = false;
+        boolean currentState = isRadioOn();
         Intent intent = new Intent();
         intent.setAction(SharedConstants.ACTION_RADIO_ON);
         Log.d(TAG, "requestRadioOn: sendBroadcast intent: ACTION_RADIO_ON");
