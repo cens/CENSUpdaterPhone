@@ -34,20 +34,21 @@ public class SharedUtils {
     }
     
     /**
-     * Sends a request for radio to be turned on (airplane mode off).
+     * Sends a request for radio to be turned on.
      * The request is sent even if the state already seems to be as requested.
      * @return true if radio seems to be already in the requested state, false
      *   otherwise
      */
     public static boolean requestRadioOn() {
-        boolean currentState = !isAirplaneModeOn();
+        // TODO: instead of false, query radio on via ConnectivityManager or 
+        //   TelephoneManager
+        boolean currentState = false;
         Intent intent = new Intent();
         intent.setAction(SharedConstants.ACTION_RADIO_ON);
         Log.d(TAG, "requestRadioOn: sendBroadcast intent: ACTION_RADIO_ON");
         context.sendBroadcast(intent);
         return currentState;
-    }
-
+    }    
     /**
      * Wait until we think the radio is on.
      * This is approximate and will wait until SendReceiver service that controls
