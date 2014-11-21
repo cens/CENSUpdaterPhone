@@ -44,14 +44,18 @@ public class SharedUtils {
     /**
      * Sends a request for radio to be turned on.
      * The request is sent even if the state already seems to be as requested.
+     * @param sender: application name of the app that is sending request
+     * @param useCase: use case id. e.g. 1-1 for rebooter sending Test/Ping SMS
      * @return true if radio appears to be already in the requested state, false
      *   otherwise
      */
-    public static boolean requestRadioOn() {
+    public static boolean requestRadioOn(String sender, String useCase) {
         boolean currentState = isRadioOn();
         Intent intent = new Intent();
         intent.setAction(SharedConstants.ACTION_RADIO_ON);
-        Log.d(TAG, "requestRadioOn: sendBroadcast intent: ACTION_RADIO_ON");
+        intent.putExtra("sender", sender);
+        intent.putExtra("useCase", useCase);
+        Log.d(TAG, "requestRadioOn: ACTION_RADIO_ON " + sender + ", " + useCase);
         context.sendBroadcast(intent);
         return currentState;
     }    
