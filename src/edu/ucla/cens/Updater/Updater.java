@@ -330,10 +330,10 @@ public class Updater
 		boolean rc = false;
 		cache.resetDataRetrievalError();
 		Log.d(TAG, "doUpdate: requesting radio on");
-        boolean alreadyOn = SharedUtils.requestRadioOn("Updater", "1-1");
-		if (!alreadyOn) {
-		    SharedUtils.waitForRadioOn();
-		}
+        boolean radioOn = SharedUtils.requestRadioOn("Updater", "1-1", true);
+        if (!radioOn) {
+            Log.w(TAG, "doUpdate: radio is off. Will try update anyway.");
+        }
 		
 		try
 		{

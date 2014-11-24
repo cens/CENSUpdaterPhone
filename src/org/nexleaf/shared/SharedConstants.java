@@ -33,12 +33,10 @@ public class SharedConstants {
     /**
      * Time in millis to wait for airplane mode on to come on.
      * In test mode, use 5000 (5s).
-     * In production, use 60000 (60s)
+     * In production, use 180000 (60s)
      */
-    //public static final long DEFAULT_WAIT_RADIO_ON = 5000;
-    //public static final long DEFAULT_WAIT_RADIO_ON = 15000;
-    //public static final long DEFAULT_WAIT_RADIO_ON = 35000;
-    public static final long DEFAULT_WAIT_RADIO_ON = 60000;
+    //public static final long DEFAULT_WAIT_RADIO_ON = 60000;
+    public static final long DEFAULT_WAIT_RADIO_ON = 180000;
     
     /**
      * Time in millis an Alarm will be triggered to turn radio off again
@@ -51,7 +49,7 @@ public class SharedConstants {
     
     //public static final long DEFAULT_RADIO_OFF_DELAY = 1*60*1000;
     //public static final long DEFAULT_RADIO_OFF_DELAY = 2*60*1000;    
-    public static final long DEFAULT_RADIO_OFF_DELAY = 3*60*1000;    
-  
+    public static final long DEFAULT_RADIO_OFF_DELAY = 4*60*1000;    
+
 
 }
