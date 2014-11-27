@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.provider.Settings;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 
 /**
@@ -45,14 +43,19 @@ public class SharedUtils {
      * @param sender: application name of the app that is sending request
      * @param useCase: use case id. e.g. 1-1 for rebooter sending Test/Ping SMS
      * @param block: if true, blocks until radio is on or timeout occurs (invokes waitForRadioOn)
+     * @param onInterval radio off delay/interval, in minutes, after which radio 
+     *   will be turned off again. If 0, will use the default value.
      * @return true if radio appears to be already in the requested state, false
      *   otherwise
      */
-    public static boolean requestRadioOn(String sender, String useCase, boolean block) {
+    public static boolean requestRadioOn(String sender, String useCase, boolean block, int onIntervalMinutes) {
         Intent intent = new Intent();
         intent.setAction(SharedConstants.ACTION_RADIO_ON);
         intent.putExtra("sender", sender);
         intent.putExtra("useCase", useCase);
+        if (onIntervalMinutes != 0) {
+            intent.putExtra("onInterval", (long) (onIntervalMinutes * 60000L));
+        }
         Log.d(TAG, "requestRadioOn: ACTION_RADIO_ON " + sender + ", " + useCase);
         context.sendBroadcast(intent);
         boolean rc = isRadioOn();
@@ -93,5 +96,25 @@ public class SharedUtils {
         return connManager.getActiveNetworkInfo() != null;
     }
 
+    
+    /**
+     * Broadcasts a request for SMS to be sent.
+     * @param sender: application name of the app that is sending request
+     * @param useCase: use case id. e.g. 1-1 for rebooter sending Test/Ping SMS
+     * @param phoneNumber:  phone number to send to
+     * @param body:  body/text to send
+     * @param expires: time, in minutes after which the request expires and won't be tried again
+     */
+    public static void requestSendSms(String sender, String useCase, String phoneNumber, String body, int expires) {
+        Intent intent = new Intent();
+        intent.setAction(SharedConstants.ACTION_SEND_SMS);
+        intent.putExtra("sender", sender);
+        intent.putExtra("useCase", useCase);
+        intent.putExtra("phoneNumber", phoneNumber);
+        intent.putExtra("body", body);
+        intent.putExtra("expires", expires);
+        Log.d(TAG, "requestSendSms: ACTION_SEND_SMS " + sender + ", " + useCase);
+        context.sendBroadcast(intent);
+    }    
     
 }
