@@ -35,6 +35,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.ContentResolver;
 import android.database.SQLException;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
@@ -156,6 +157,14 @@ public class Updater
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		try {
+			Log.d(TAG, "Trying to set auto sync !");
+      ContentResolver.setMasterSyncAutomatically(true); 
+      boolean res = ContentResolver.getMasterSyncAutomatically(); 
+			Log.d(TAG, "auto sync force set was " + Boolean.toString(res));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		
 		
 		/**
@@ -225,7 +234,7 @@ public class Updater
 			final Class iConnectivityManagerClass = Class.forName(iConnectivityManager.getClass().getName());
 			final Method setMobileDataEnabledMethod = iConnectivityManagerClass.getDeclaredMethod("setMobileDataEnabled", Boolean.TYPE);
 			setMobileDataEnabledMethod.setAccessible(true);
-				setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
+      setMobileDataEnabledMethod.invoke(iConnectivityManager, true);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
