@@ -15,16 +15,16 @@ public class SysappClear {
 	  // 8)skype  9)messenger 10) movies 
 	  private static final String[] app_clear_list =
 		  {	"MagicSmokeWallpapers.apk", "Google_Play_Store_v3_9_16.apk", "MessengerWithYou.apk",
-		  	"FMPlayer.apk", "Email.apk", "Calendar.apk",
-		  	"Music.apk", "SoundRecorder.apk",
+		  	"FMPlayer.apk", "Email.apk", "Calendar.apk", "DeskClock.apk", "facebook.apk",
+		  	"Music.apk", "SoundRecorder.apk", "FMPlayer.apk", "Operamini.apk",
 		  	"VisualizationWallpapers.apk", "SprdNote.apk",
-        "BaiduSearch_Android_1-0-9-95_7300195a.apk",
-        "FMRadio.apk", "Gallery3D.apk", "Gmail.apk", "MarketUpdater.apk",
-        "CalendarProvider.apk", "GoogleCalendarSyncAdapter.apk",
+        "BaiduSearch_Android_1-0-9-95_7300195a.apk", "GooglePlay.apk", "twitter4.1.8.apk", "viber.apk",
+        "FMRadio.apk", "Gallery3D.apk", "Gmail.apk", "S15DigitalClock.apk", "S15_hwd_VoiceSearch_214.apk", "S15QuickSearchBox.apk",
+        "CalendarProvider.apk", "GoogleCalendarSyncAdapter.apk", 
         "Street.apk", "YouTube.apk", "NotePad.apk", "FMRadio.apk",
         "GooglePartnerSetup.apk", "GoogleQuickSearchBox.apk",
         "Talk.apk", "VoiceSearch.apk","GoogleContactsSyncAdapter.apk",
-        "HwWallpaperChooser.apk", "BeyondTheSkyTheme.apk",
+        "HwWallpaperChooser.apk", "BeyondTheSkyTheme.apk", "MarketUpdater.apk",
 		  	"com.skype.rover.apk", "CallFireWall.apk"
 		  	};
   //private static final String[] framework_clear_list =
