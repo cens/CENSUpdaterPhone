@@ -9,3 +9,4 @@ gen
 /.idea/libraries
 .DS_Store
 /build
+/app/build/
