@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -125,112 +126,156 @@ public class Installer extends Activity
 			if(activityKilled) return;
 			
 			// Open the connection to the current package and get its length.
-			URLConnection connection;
-			int totalLength;
-			try
-			{
-				connection = url.openConnection();
-				totalLength = connection.getContentLength();
-				
-				if(totalLength <= 0)
-				{
-					error("The total lenth of the file is invalid: " + totalLength, new IllegalStateException("The file no longer exists or has an invalid size."));
-					Updater updater = new Updater(mContext);
-					updater.doUpdate();
-					return;
-				}
-			}
-			catch(IOException e)
-			{
-				error("Failed to connect to the remote file.", e);
-				return;
-			}
-			
-			if(activityKilled) return;
-			
-			// Get the input stream to begin reading the content.
-			InputStream dataStream;
-			try
-			{
-				dataStream = connection.getInputStream();
-			}
-			catch(IOException e)
-			{
-				error("Failed to open an input stream from the url: " + url, e);
-				return;
-			}
-			
-			if(activityKilled) return;
-			
-			// Create a connection to the local file that will store the APK.
-			// The package is made world readable, so that Android's package 
-			// installer can read it.
-			FileOutputStream apkFile;
-			try
-			{
-				apkFile = openFileOutput(packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk", MODE_WORLD_READABLE);
-			}
-			catch(ArrayIndexOutOfBoundsException e)
-			{
-				error("The array index, " + currPackageIndex + ", was out of bounds for the packages to be updated array which length: " + packagesToBeUpdated.length, e);
-				return;
-			}
-			catch(IllegalArgumentException e)
-			{
-				error("The package filename was invalid.", e);
-				return;
-			}
-			catch(IOException e)
-			{
-				error("Could not create temporary file.", e);
-				return;
-			}
-			
-			if(activityKilled) return;
-			
-			try
-			{
-				int currDownloaded = 0;
-				int totalDownloaded = 0;
-				
-				// Download the file chunk by chunk each time updating the
-				// interface with our progress.
-				byte[] buff = new byte[MAX_CHUNK_LENGTH];
-				while((currDownloaded = dataStream.read(buff)) != -1)
-				{
-					try
-					{
-						if(activityKilled) return;
-						
-						apkFile.write(buff, 0, currDownloaded);
-						
-						totalDownloaded += currDownloaded;
-						updateProgressBarValue(totalDownloaded, totalLength);
+            HttpURLConnection connection;
+            int totalLength, alreadyDownloaded;
+            String lastModified, responseCode;
+            SharedPreferences sharedPreferences = mContext.getSharedPreferences(Database.PACKAGE_PREFERENCES, Context.MODE_PRIVATE);
+            try
+            {
+                connection = (HttpURLConnection) url.openConnection();
+                alreadyDownloaded = sharedPreferences.getInt("alreadyDownloaded",0);
+                lastModified = sharedPreferences.getString("lastmodified", "");
 
-						// This was originally being done to debug the code but
-						// is being left in as a flag that something odd has
-						// happened.
-						if(totalLength - totalDownloaded < 0)
-						{
-							Log.e(TAG, "Downloaded more than the total size of the file.");
-						}
-					}
-					catch(IOException e)
-					{
-						error("Error while writing to the file output stream.", e);
-						return;
-					}
-				}
-			}
-			catch(IOException e)
-			{
-				error("Error while reading from the url input stream.", e);
-				return;
-			}
+                if(alreadyDownloaded > 0){
+                    connection.setRequestProperty("Range", "bytes=" + alreadyDownloaded + "-");
+                    connection.setRequestProperty("If-Range", lastModified);
+                    connection.connect();
+                }
+                else{
+                    connection.connect();
+                    lastModified = connection.getHeaderField("Last-Modified");
+                    alreadyDownloaded = 0;
+                }
+                totalLength = connection.getContentLength();
+
+                totalLength = totalLength+alreadyDownloaded;
+                responseCode = String.valueOf(connection.getResponseCode());
+
+
+
+                if(totalLength <= 0)
+                {
+                    error("The total lenth of the file is invalid: " + totalLength, new IllegalStateException("The file no longer exists or has an invalid size."));
+                    Updater updater = new Updater(mContext);
+                    updater.doUpdate();
+                    return;
+                }
+            }
+            catch(IOException e)
+            {
+                error("Failed to connect to the remote file.", e);
+                return;
+            }
+
+            if(activityKilled) return;
+
+            // Get the input stream to begin reading the content.
+            InputStream dataStream;
+            try
+            {
+                dataStream = connection.getInputStream();
+
+
+            }
+            catch(IOException e)
+            {
+                error("Failed to open an input stream from the url: " + url, e);
+                return;
+            }
+
+            if(activityKilled) return;
+
+            // Create a connection to the local file that will store the APK.
+            // The package is made world readable, so that Android's package
+            // installer can read it.
+            FileOutputStream apkFile;
+            try
+            {
+
+                if(responseCode.equals("206")){
+                    apkFile = openFileOutput(packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk",  MODE_WORLD_READABLE | MODE_APPEND);
+                }
+                else{
+                    apkFile = openFileOutput(packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk",  MODE_WORLD_READABLE);
+
+                }
+            }
+            catch(ArrayIndexOutOfBoundsException e)
+            {
+                error("The array index, " + currPackageIndex + ", was out of bounds for the packages to be updated array which length: " + packagesToBeUpdated.length, e);
+                return;
+            }
+            catch(IllegalArgumentException e)
+            {
+                error("The package filename was invalid.", e);
+                return;
+            }
+            catch(IOException e)
+            {
+                error("Could not create temporary file.", e);
+                return;
+            }
+
+            if(activityKilled) return;
+            int totalDownloaded = 0;
+            try
+            {
+                int currDownloaded = 0;
+                totalDownloaded = alreadyDownloaded;
+
+                // Download the file chunk by chunk each time updating the
+                // interface with our progress.
+                byte[] buff = new byte[MAX_CHUNK_LENGTH];
+                while((currDownloaded = dataStream.read(buff)) != -1)
+                {
+                    try
+                    {
+                        if(activityKilled){
+                            alreadyDownloaded = totalDownloaded;
+                            sharedPreferences.edit().putInt("alreadyDownloaded", alreadyDownloaded).commit();
+                            sharedPreferences.edit().putString("lastmodified", lastModified).commit();
+
+                            dataStream.close();
+                            return;
+                        }
+
+                        apkFile.write(buff, 0, currDownloaded);
+
+                        totalDownloaded += currDownloaded;
+
+                        updateProgressBarValue(totalDownloaded, totalLength);
+
+                        // This was originally being done to debug the code but
+                        // is being left in as a flag that something odd has
+                        // happened.
+                        if(totalLength - totalDownloaded < 0)
+                        {
+                            Log.e(TAG, "Downloaded more than the total size of the file.");
+                        }
+                    }
+                    catch(IOException e)
+                    {
+                        error("Error while writing to the file output stream.", e);
+                        return;
+                    }
+                }
+            }
+            catch(IOException e)
+            {
+                alreadyDownloaded = totalDownloaded;
+                sharedPreferences.edit().putInt("alreadyDownloaded", alreadyDownloaded).commit();
+                sharedPreferences.edit().putString("lastmodified", lastModified).commit();
+
+                error("Error while reading from the url input stream.", e);
+                return;
+            }
 			
 			if(activityKilled) return;
-			
-			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_DOWNLOADING));
+
+            sharedPreferences.edit().putInt("alreadyDownloaded", 0).commit();
+            sharedPreferences.edit().putString("lastmodified", "").commit();
+
+            messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_DOWNLOADING));
 		}
 		
 		/**
@@ -547,7 +592,7 @@ public class Installer extends Activity
 		{
 			activityKilled = false;
 			currPackageIndex = 0;
-			initialCleanup();
+            processPackage();
 		}
 	}
 	
@@ -729,82 +774,6 @@ public class Installer extends Activity
 		else
 		{
 			nextPackage();
-		}
-	}
-	
-	/**
-	 * Runs the cleanup at the beginning of the Activity
-	 */
-	private void initialCleanup()
-	{
-		installerText.setText("Cleaning...");
-		
-		Thread cleanupThread = new Thread(new CleanupThread());
-		cleanupThread.setName("Cleanup Thread");
-		cleanupThread.start();
-	}
-	
-	/**
-	 * Separate thread for cleaning up all the downloaded APKs.
-	 * 
-	 * @author John Jenkins
-	 */
-	private class CleanupThread implements Runnable
-	{
-		/**
-		 * Deletes all APK files that we have temporarily stored while we were
-		 * downloading or installing them.
-		 */
-		public void run()
-		{
-			try
-			{
-				/**
-				 * Filters out all of the APK files.
-				 * 
-				 * @author John Jenkins
-				 */
-				class OnlyApks implements FilenameFilter {
-					/**
-					 * Filters out the files that end with ".apk" as that's how we
-					 * save them before installing them.
-					 */
-					@Override
-					public boolean accept(File dir, String filename)
-					{
-						if(filename.endsWith(".apk"))
-						{
-							return true;
-						}
-						
-						return false;
-					}
-				}
-				
-				// Gets the list of APK files.
-				File downloadDirectory = getApplicationContext().getFilesDir();
-				String[] apkFiles = downloadDirectory.list(new OnlyApks());
-				
-				// Deletes each of the files one by one.
-				String downloadDirectoryString = downloadDirectory.getAbsolutePath();
-				for(int i = 0; i < apkFiles.length; i++)
-				{
-					(new File(new StringBuilder(downloadDirectoryString).append("/").append(apkFiles[i]).toString())).delete();
-				}
-			}
-			catch(SecurityException e)
-			{
-				Log.e(TAG, "Prevented from reading or deleting files from our own files directory.", e);
-			}
-			catch(Exception e)
-			{
-				// I recognize that it is bad to catch a generic exception, but
-				// this is not critical if it fails. We will note the error and
-				// continue on as normal.
-				Log.e(TAG, "An exception occurred while deleting the old packages.", e);
-			}
-			
-			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INITIAL_CLEANUP));
 		}
 	}
 }
