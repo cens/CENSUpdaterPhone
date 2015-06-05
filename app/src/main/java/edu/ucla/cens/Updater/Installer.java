@@ -129,33 +129,36 @@ public class Installer extends Activity
             HttpURLConnection connection;
             int totalLength, alreadyDownloaded;
             String lastModified, responseCode;
+
+            // Shared preferences used to store size of the apk downloaded
+            // and its last modified date.
             SharedPreferences sharedPreferences = mContext.getSharedPreferences(Database.PACKAGE_PREFERENCES, Context.MODE_PRIVATE);
             try
             {
-                connection = (HttpURLConnection) url.openConnection();
                 alreadyDownloaded = sharedPreferences.getInt("alreadyDownloaded",0);
                 lastModified = sharedPreferences.getString("lastmodified", "");
+                connection = (HttpURLConnection) url.openConnection();
 
+                // If this apk is partially downloaded, then ask for the rest of the apk.
                 if(alreadyDownloaded > 0){
                     connection.setRequestProperty("Range", "bytes=" + alreadyDownloaded + "-");
                     connection.setRequestProperty("If-Range", lastModified);
                     connection.connect();
                 }
+                // If this is a new download, then store the last modified for future use.
                 else{
                     connection.connect();
                     lastModified = connection.getHeaderField("Last-Modified");
                     alreadyDownloaded = 0;
                 }
-                totalLength = connection.getContentLength();
-
-                totalLength = totalLength+alreadyDownloaded;
+                // Total length of the file is length of the file being
+                // downloaded + length which is already downloaded.
+                totalLength = connection.getContentLength() +alreadyDownloaded;
                 responseCode = String.valueOf(connection.getResponseCode());
-
-
 
                 if(totalLength <= 0)
                 {
-                    error("The total lenth of the file is invalid: " + totalLength, new IllegalStateException("The file no longer exists or has an invalid size."));
+                    error("The total length of the file is invalid: " + totalLength, new IllegalStateException("The file no longer exists or has an invalid size."));
                     Updater updater = new Updater(mContext);
                     updater.doUpdate();
                     return;
@@ -174,8 +177,6 @@ public class Installer extends Activity
             try
             {
                 dataStream = connection.getInputStream();
-
-
             }
             catch(IOException e)
             {
@@ -191,7 +192,7 @@ public class Installer extends Activity
             FileOutputStream apkFile;
             try
             {
-
+                // If partial content, then append the file. Else, write as usual.
                 if(responseCode.equals("206")){
                     apkFile = openFileOutput(packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk",  MODE_WORLD_READABLE | MODE_APPEND);
                 }
@@ -231,6 +232,7 @@ public class Installer extends Activity
                     try
                     {
                         if(activityKilled){
+                            //If activity is killed, the store the values in shared preferences.
                             alreadyDownloaded = totalDownloaded;
                             sharedPreferences.edit().putInt("alreadyDownloaded", alreadyDownloaded).commit();
                             sharedPreferences.edit().putString("lastmodified", lastModified).commit();
@@ -262,6 +264,8 @@ public class Installer extends Activity
             }
             catch(IOException e)
             {
+                // If IO Exception, store current downloaded and last modified
+                // in shared preferences.
                 alreadyDownloaded = totalDownloaded;
                 sharedPreferences.edit().putInt("alreadyDownloaded", alreadyDownloaded).commit();
                 sharedPreferences.edit().putString("lastmodified", lastModified).commit();
@@ -272,6 +276,7 @@ public class Installer extends Activity
 			
 			if(activityKilled) return;
 
+            // Reset the values in shared preferences if the download is successful.
             sharedPreferences.edit().putInt("alreadyDownloaded", 0).commit();
             sharedPreferences.edit().putString("lastmodified", "").commit();
 
