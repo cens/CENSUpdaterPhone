@@ -104,7 +104,9 @@ public class Installer extends Activity
 		@Override
 		public void run()
 		{
-			updateInstallerText("Downloading " + packagesToBeUpdated[currPackageIndex].getDisplayName());
+            String packageQualifiedName = packagesToBeUpdated[currPackageIndex].getQualifiedName();
+
+            updateInstallerText("Downloading " + packagesToBeUpdated[currPackageIndex].getDisplayName());
 
 			// These are placed throughout the code as a way to signal that the
 			// process should stop, but without leaving the JVM or anything
@@ -119,7 +121,7 @@ public class Installer extends Activity
 			}
 			catch(MalformedURLException e)
 			{
-				error("Malformed URL in package " + packagesToBeUpdated[currPackageIndex].getQualifiedName(), e);
+				error("Malformed URL in package " + packageQualifiedName, e);
 				return;
 			}
 			
@@ -135,8 +137,8 @@ public class Installer extends Activity
             SharedPreferences sharedPreferences = mContext.getSharedPreferences(Database.PACKAGE_PREFERENCES, Context.MODE_PRIVATE);
             try
             {
-                alreadyDownloaded = sharedPreferences.getInt("alreadyDownloaded",0);
-                lastModified = sharedPreferences.getString("lastmodified", "");
+                alreadyDownloaded = sharedPreferences.getInt(packageQualifiedName+" alreadyDownloaded",0);
+                lastModified = sharedPreferences.getString(packageQualifiedName+" lastmodified", "");
                 connection = (HttpURLConnection) url.openConnection();
 
                 // If this apk is partially downloaded, then ask for the rest of the apk.
@@ -194,10 +196,10 @@ public class Installer extends Activity
             {
                 // If partial content, then append the file. Else, write as usual.
                 if(responseCode.equals("206")){
-                    apkFile = openFileOutput(packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk",  MODE_WORLD_READABLE | MODE_APPEND);
+                    apkFile = openFileOutput(packageQualifiedName + ".apk",  MODE_WORLD_READABLE | MODE_APPEND);
                 }
                 else{
-                    apkFile = openFileOutput(packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk",  MODE_WORLD_READABLE);
+                    apkFile = openFileOutput(packageQualifiedName + ".apk",  MODE_WORLD_READABLE);
 
                 }
             }
@@ -234,8 +236,8 @@ public class Installer extends Activity
                         if(activityKilled){
                             //If activity is killed, the store the values in shared preferences.
                             alreadyDownloaded = totalDownloaded;
-                            sharedPreferences.edit().putInt("alreadyDownloaded", alreadyDownloaded).commit();
-                            sharedPreferences.edit().putString("lastmodified", lastModified).commit();
+                            sharedPreferences.edit().putInt(packageQualifiedName+" alreadyDownloaded", alreadyDownloaded).commit();
+                            sharedPreferences.edit().putString(packageQualifiedName+" lastmodified", lastModified).commit();
 
                             dataStream.close();
                             return;
@@ -267,8 +269,8 @@ public class Installer extends Activity
                 // If IO Exception, store current downloaded and last modified
                 // in shared preferences.
                 alreadyDownloaded = totalDownloaded;
-                sharedPreferences.edit().putInt("alreadyDownloaded", alreadyDownloaded).commit();
-                sharedPreferences.edit().putString("lastmodified", lastModified).commit();
+                sharedPreferences.edit().putInt(packageQualifiedName+" alreadyDownloaded", alreadyDownloaded).commit();
+                sharedPreferences.edit().putString(packageQualifiedName+" lastmodified", lastModified).commit();
 
                 error("Error while reading from the url input stream.", e);
                 return;
@@ -277,8 +279,8 @@ public class Installer extends Activity
 			if(activityKilled) return;
 
             // Reset the values in shared preferences if the download is successful.
-            sharedPreferences.edit().putInt("alreadyDownloaded", 0).commit();
-            sharedPreferences.edit().putString("lastmodified", "").commit();
+            sharedPreferences.edit().putInt(packageQualifiedName+" alreadyDownloaded", 0).commit();
+            sharedPreferences.edit().putString(packageQualifiedName+" lastmodified", "").commit();
 
             messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_DOWNLOADING));
 		}
