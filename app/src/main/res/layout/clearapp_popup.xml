@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#fff"
+    android:padding="5dp" >
+    
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Takes 30 seconds, reboots phone">
+
+        <Button 
+            android:id="@+id/clearappsConfirmButton"
+            android:text="Clear System Apps"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="50" />
+        
+        <Button
+            android:id="@+id/clearappsCancelButton"
+            android:text="Cancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="50" />
+        
+    </LinearLayout>
+
+</LinearLayout>

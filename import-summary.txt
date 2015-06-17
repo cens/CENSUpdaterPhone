@@ -1,0 +1,132 @@
+ECLIPSE ANDROID PROJECT IMPORT SUMMARY
+======================================
+
+Ignored Files:
+--------------
+The following files were *not* copied into the new Gradle project; you
+should evaluate whether these are still needed in your project and if
+so manually move them:
+
+* .gitignore
+* .idea/
+* .idea/.name
+* .idea/compiler.xml
+* .idea/copyright/
+* .idea/copyright/profiles_settings.xml
+* .idea/encodings.xml
+* .idea/misc.xml
+* .idea/modules.xml
+* .idea/scopes/
+* .idea/scopes/scope_settings.xml
+* .idea/vcs.xml
+* .idea/workspace.xml
+* README.md
+* app/
+* app/build.gradle
+* app/lint.xml
+* app/src/
+* app/src/main/
+* app/src/main/AndroidManifest.xml
+* app/src/main/java/
+* app/src/main/java/edu/
+* app/src/main/java/edu/ucla/
+* app/src/main/java/edu/ucla/cens/
+* app/src/main/java/edu/ucla/cens/Updater/
+* app/src/main/java/edu/ucla/cens/Updater/AppList.java
+* app/src/main/java/edu/ucla/cens/Updater/CustomPreferenceActivity.java
+* app/src/main/java/edu/ucla/cens/Updater/Database.java
+* app/src/main/java/edu/ucla/cens/Updater/InstallationEchoer.java
+* app/src/main/java/edu/ucla/cens/Updater/Installer.java
+* app/src/main/java/edu/ucla/cens/Updater/PackageDescription.java
+* app/src/main/java/edu/ucla/cens/Updater/PackageInformation.java
+* app/src/main/java/edu/ucla/cens/Updater/Register.java
+* app/src/main/java/edu/ucla/cens/Updater/StatusActivity.java
+* app/src/main/java/edu/ucla/cens/Updater/UpdateReceiver.java
+* app/src/main/java/edu/ucla/cens/Updater/Updater.java
+* app/src/main/java/edu/ucla/cens/Updater/model/
+* app/src/main/java/edu/ucla/cens/Updater/model/AppInfoModel.java
+* app/src/main/java/edu/ucla/cens/Updater/model/EasyObservable.java
+* app/src/main/java/edu/ucla/cens/Updater/model/OnChangeListener.java
+* app/src/main/java/edu/ucla/cens/Updater/model/SettingsModel.java
+* app/src/main/java/edu/ucla/cens/Updater/model/SimpleObservable.java
+* app/src/main/java/edu/ucla/cens/Updater/model/StatusModel.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/
+* app/src/main/java/edu/ucla/cens/Updater/utils/AppInfoCache.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/AppManager.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/Constants.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/Exec.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/OnInstalledPackage.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/PMCLI.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/RestClient.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/ServiceClientException.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/SysappClear.java
+* app/src/main/java/edu/ucla/cens/Updater/utils/Utils.java
+* app/src/main/java/edu/ucla/cens/systemlog/
+* app/src/main/java/edu/ucla/cens/systemlog/ISystemLog.java
+* app/src/main/java/edu/ucla/cens/systemlog/Log.java
+* app/src/main/java/org/
+* app/src/main/java/org/nexleaf/
+* app/src/main/java/org/nexleaf/shared/
+* app/src/main/java/org/nexleaf/shared/SharedConstants.java
+* app/src/main/java/org/nexleaf/shared/SharedUtils.java
+* app/src/main/res/
+* app/src/main/res/drawable-hdpi/
+* app/src/main/res/drawable-hdpi/manager.png
+* app/src/main/res/drawable-hdpi/u.png
+* app/src/main/res/drawable-ldpi/
+* app/src/main/res/drawable-ldpi/manager.png
+* app/src/main/res/drawable-ldpi/u.png
+* app/src/main/res/drawable-ldpi/updater_logo.png
+* app/src/main/res/drawable-mdpi/
+* app/src/main/res/drawable-mdpi/manager.png
+* app/src/main/res/drawable-mdpi/u.png
+* app/src/main/res/layout/
+* app/src/main/res/layout/app_list.xml
+* app/src/main/res/layout/checked_list_item.xml
+* app/src/main/res/layout/clearapp_popup.xml
+* app/src/main/res/layout/installer.xml
+* app/src/main/res/layout/list_item.xml
+* app/src/main/res/layout/register_popup.xml
+* app/src/main/res/layout/status_activity.xml
+* app/src/main/res/menu/
+* app/src/main/res/menu/options_menu.xml
+* app/src/main/res/values/
+* app/src/main/res/values/strings.xml
+* app/src/main/res/xml/
+* app/src/main/res/xml/preferences.xml
+* build.gradle
+* build.xml
+* gradle/
+* gradle/wrapper/
+* gradle/wrapper/gradle-wrapper.jar
+* gradle/wrapper/gradle-wrapper.properties
+* gradlew
+* gradlew.bat
+* keystore
+* proguard-project.txt
+* settings.gradle
+
+Moved Files:
+------------
+Android Gradle projects use a different directory structure than ADT
+Eclipse projects. Here's how the projects were restructured:
+
+* AndroidManifest.xml => app/src/main/AndroidManifest.xml
+* lint.xml => app/lint.xml
+* res/ => app/src/main/res/
+* src/ => app/src/main/java/
+
+Next Steps:
+-----------
+You can now build the project. The Gradle project needs network
+connectivity to download dependencies.
+
+Bugs:
+-----
+If for some reason your project does not build, and you determine that
+it is due to a bug or limitation of the Eclipse to Gradle importer,
+please file a bug at http://b.android.com with category
+Component-Tools.
+
+(This import summary is for your information only, and can be deleted
+after import once you are satisfied with the results.)

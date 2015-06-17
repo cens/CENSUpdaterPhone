@@ -16,7 +16,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -26,6 +25,12 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.ucla.cens.Updater.PackageInformation.Action;
+import edu.ucla.cens.Updater.model.StatusModel;
+import edu.ucla.cens.Updater.utils.AppInfoCache;
+import edu.ucla.cens.Updater.utils.AppManager;
+import edu.ucla.cens.Updater.utils.PMCLI;
+import edu.ucla.cens.Updater.utils.OnInstalledPackage;
 import edu.ucla.cens.systemlog.Log;
 
 /**
@@ -49,6 +54,7 @@ public class Installer extends Activity
 	private static final int MESSAGE_UPDATE_DOWNLOADER_TEXT = 4;
 	private static final int MESSAGE_UPDATE_PROGRESS_BAR = 5;
 	private static final int MESSAGE_FINISHED_INITIAL_CLEANUP = 6; 
+	private static final int MESSAGE_FINISHED_UNINSTALLING = 7;
 	
 	private static final int MAX_CHUNK_LENGTH = 4096;
 	
@@ -68,6 +74,7 @@ public class Installer extends Activity
 	
 	private PackageDownloader downloaderThread;
 	private PackageInstaller installerThread;
+	//private PackageUninstaller uninstallerThread;
 	
 	private PackageInformation[] packagesToBeUpdated;
 	private int currPackageIndex;
@@ -78,6 +85,8 @@ public class Installer extends Activity
 	private String newInstallerText;
 	private String newDownloaderText;
 	private int newProgressBarValue;
+	
+	private StatusModel model = StatusModel.get();
 	
 	/**
 	 * Private class that downloads the current file and sends a message back
@@ -288,6 +297,8 @@ public class Installer extends Activity
 		@Override
 		public void run()
 		{
+			//Log.d(TAG, "PackageInstaller.run.1");
+
 			// If the downloader failed, but we still arrived here, just fall
 			// out with an error message.
 			if(currPackageError)
@@ -303,7 +314,10 @@ public class Installer extends Activity
 			
 			if(activityKilled) return;
 			
-			File apkFile = new File(getApplicationContext().getFilesDir().getAbsolutePath() + "/" + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk");
+			String apkpath = getApplicationContext().getFilesDir().getAbsolutePath() + "/" + packagesToBeUpdated[currPackageIndex].getQualifiedName() + ".apk";
+			String packageName = packagesToBeUpdated[currPackageIndex].getQualifiedName();
+			File apkFile = new File(apkpath);
+			//Log.d(TAG, "PackageInstaller.run.2: " + apkFile);
 			if(apkFile.exists())
 			{
 				if(activityKilled) return;
@@ -314,9 +328,93 @@ public class Installer extends Activity
 					sharedPreferences.edit().putBoolean(Database.PREFERENCES_SELF_UPDATE, true).commit();
 				}
 				
+				
+				/*
 				Intent installIntent = new Intent(android.content.Intent.ACTION_VIEW);
 				installIntent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive");
+				
+				
 				startActivityForResult(installIntent, FINISHED_INSTALLING_PACKAGE);
+				*/
+				Action action = packagesToBeUpdated[currPackageIndex].getAction();
+				PMCLI am;
+				Log.d(TAG, "am starting istall: " + apkpath);
+				try {
+					am = new PMCLI(getApplicationContext());
+					am.setOnInstalledPackaged(new OnInstalledPackage() {
+						 
+					    public void packageInstalled(String packageName, int returnCode, String message) {
+					    	String msg;
+					        if (returnCode == PMCLI.INSTALL_SUCCEEDED) {
+					        	msg = "Install succeeded for " + packageName + ": " + message;
+					            Log.d(TAG, msg);
+								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());
+								updateInstallerText("Installed " + packageName);
+								model.addInfoMessage(msg);
+					        } else {
+					        	msg = "Install failed for " + packageName + ": rc=" + returnCode + ": " + message;
+					            Log.e(TAG, msg);
+								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());
+								updateInstallerText("Failed to install " + packageName);
+								model.addErrorMessage(msg);
+					        }
+					        // do async toast to run on ui thread
+				        	AppManager.get().doToastMessageAsync(msg);
+							messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INSTALLING));
+					    }
+					    
+					    public void packageUninstalled(String packageName, int returnCode, String message) {
+					    	String msg;
+					        if (returnCode == PMCLI.UNINSTALL_SUCCEEDED) {
+					        	msg = "Uninstall succeeded for " + packageName + ": " + message;
+					            Log.d(TAG, msg);
+								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());
+								updateInstallerText("Uninstalled " + packageName);
+								model.addInfoMessage(msg);
+								messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_UNINSTALLING));				        	
+					        } else {
+					        	msg = "Uninstall failed for " + packageName + ": rc=" + returnCode + ": " + message;
+					            Log.e(TAG, msg);
+								//updateInstallerText("Installed " + packagesToBeUpdated[currPackageIndex].getDisplayName());
+								updateInstallerText("Failed to uninstall " + packageName);
+								model.addErrorMessage(msg);
+					        }
+					        // do async toast to run on ui thread
+				        	AppManager.get().doToastMessageAsync(msg);
+							messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_FINISHED_INSTALLING));				        	
+					    }
+					    
+					});
+					if (action == Action.UPDATE) {
+						am.installPackageViaShell(apkpath);
+					} else if (action == Action.CLEAN) {
+						// if package not installed any more, install it now
+						try {
+							// Get the package's information. If this doesn't throw an
+							// exception, then the package must be installed.
+							PackageManager packageManager = getPackageManager();
+							packageManager.getPackageInfo(packageName, 0);
+							// no exception: let's uninstall it
+							am.uninstallPackageViaShell(packageName);
+						} catch(NameNotFoundException e) {
+							// The package isn't yet installed.
+							am.installPackageViaShell(apkpath);
+						}						
+					} else {
+						throw new RuntimeException("Only Actions UPDATE and CLEAN uspported");
+					}
+				} catch (SecurityException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (NoSuchMethodException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} finally {
+				}
+				
 			}
 			else
 			{
@@ -338,6 +436,8 @@ public class Installer extends Activity
 			messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_INSTALLER_TEXT));
 		}
 	}
+
+
 	
 	/**
 	 * Handles messages sent by the local Threads such as updating the text
@@ -348,7 +448,16 @@ public class Installer extends Activity
 		@Override
 		public void handleMessage(Message msg)
 		{
+			//Log.d(TAG, "handleMessage: " + msg);
 			if(msg.what == MESSAGE_FINISHED_DOWNLOADING)
+			{
+				progressBar.setProgress(0);
+				installerThread = new PackageInstaller();
+				Thread installer = new Thread(installerThread);
+				installer.setName("Installer");
+				installer.start();
+			}
+			else if(msg.what == MESSAGE_FINISHED_UNINSTALLING)
 			{
 				progressBar.setProgress(0);
 				installerThread = new PackageInstaller();
@@ -557,6 +666,9 @@ public class Installer extends Activity
 		if(currPackageIndex >= packagesToBeUpdated.length)
 		{
 			Log.i(TAG, "Done updating all packages.");
+			// refresh app info cache 
+			AppInfoCache.get().refresh();
+			AppManager.get().nototifyMainActivity();
 			finish();
 			return;
 		}
@@ -588,9 +700,20 @@ public class Installer extends Activity
 				// update, so we need to first remove the original package.
 				else
 				{
-					Uri packageUri = Uri.parse("package:" + packagesToBeUpdated[currPackageIndex].getQualifiedName());
-					Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageUri);
-					startActivityForResult(uninstallIntent, FINISHED_UNINSTALLING_PACKAGE);
+					// we do the same thing for action.CLEAN for now.
+					// that will trigger installer after download which will do the right thing:
+					//   it will first run uninstall, send an MESSAGE_FINISHED_UNINSTALLING message to handler
+					//   which will then trigger install
+					downloaderThread = new PackageDownloader();
+					Thread downloader = new Thread(downloaderThread);
+					downloader.setName("Downloader");
+					downloader.start();
+					/*
+					 * original code called system intent to uninstall with user interaction
+					//Uri packageUri = Uri.parse("package:" + packagesToBeUpdated[currPackageIndex].getQualifiedName());
+					//Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageUri);
+					//startActivityForResult(uninstallIntent, FINISHED_UNINSTALLING_PACKAGE);
+					*/
 				}
 			}
 			// The package isn't yet installed.

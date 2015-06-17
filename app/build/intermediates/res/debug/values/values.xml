@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From: file:/home/krngrvr09/Desktop/nexleaf/UpdaterPhone/app/src/main/res/values/strings.xml -->
+    <eat-comment/>
+    <string-array name="time_ranges">
+    	<item>Minutes</item>
+    	<item>Hours</item>
+    </string-array>
+    <string name="app_name">Updater</string>
+    <string name="default_group">Nexleaf</string>
+</resources>
